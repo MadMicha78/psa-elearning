@@ -1,4 +1,4 @@
-import JSZip from 'jszip'
+import { default: JSZip } from 'jszip'
 import { supabase } from './supabase.js'
 
 // ── Dokument aus Supabase Storage laden und Text extrahieren ──────────────────
