@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase.js'
 import { C } from './theme.js'
 import { Icon, Badge, ProgressBar, Spinner } from './components.jsx'
+import { loadDokumentText, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
 function Login({ onLogin }) {
@@ -14,8 +15,7 @@ function Login({ onLogin }) {
     if (!name.trim() || !personal.trim()) { setErr('Bitte alle Felder ausfüllen.'); return }
     setLoading(true); setErr('')
     const { data, error } = await supabase
-      .from('mitarbeiter')
-      .select('*')
+      .from('mitarbeiter').select('*')
       .eq('personal', personal.trim())
       .ilike('name', name.trim())
       .single()
@@ -65,7 +65,7 @@ function Login({ onLogin }) {
 }
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
-function Overview({ user, onSelect, onLogout }) {
+function Overview({ user, onSelect }) {
   const [modules, setModules] = useState([])
   const [docs, setDocs] = useState([])
   const [nachweise, setNachweise] = useState([])
@@ -78,21 +78,19 @@ function Overview({ user, onSelect, onLogout }) {
         supabase.from('dokumente').select('*').eq('aktiv', true).order('nr'),
         supabase.from('nachweise').select('*').eq('ma_id', user.id),
       ])
-      setModules(mods || [])
-      setDocs(doks || [])
-      setNachweise(nw || [])
+      setModules(mods||[]); setDocs(doks||[]); setNachweise(nw||[])
       setLoading(false)
     }
     load()
   }, [user.id])
 
-  const getDone = (docId) => nachweise.find(n => n.dok_id === docId && n.score / n.total >= 0.8)
+  const getDone = (docId) => nachweise.find(n => n.dok_id === docId && n.score/n.total >= 0.8)
   const total = docs.length
   const abg = docs.filter(d => getDone(d.id)).length
 
   if (loading) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}>
-      <Spinner size={32} color={C.accent}/>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh",gap:12,color:C.textMuted}}>
+      <Spinner size={28} color={C.accent}/> Schulungen werden geladen…
     </div>
   )
 
@@ -165,30 +163,30 @@ function Overview({ user, onSelect, onLogout }) {
 // ── READER ────────────────────────────────────────────────────────────────────
 function Reader({ modul, dok, onWeiter, onBack }) {
   const [gelesen, setGelesen] = useState(false)
-  const [exp, setExp] = useState({})
+  const [dokumentText, setDokumentText] = useState(null)
+  const [loading, setLoading] = useState(true)
   const ref = useRef(null)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      const text = await loadDokumentText(dok.nr)
+      setDokumentText(text)
+      setLoading(false)
+    }
+    load()
+  }, [dok.nr])
 
   useEffect(() => {
     const el = ref.current; if (!el) return
     const fn = () => { if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) setGelesen(true) }
     el.addEventListener('scroll', fn)
     return () => el.removeEventListener('scroll', fn)
-  }, [])
+  }, [loading])
 
-  const toggle = id => setExp(e => ({...e,[id]:!e[id]}))
-  const allOpen = () => {
-    const ids = {}
-    ;(dok.kapitel||[]).forEach(k => {
-      ids[k.nr] = true
-      ;(k.unterkapitel||[]).forEach(u => { ids[u.nr] = true })
-    })
-    setExp(ids)
-    // Also mark as read if no chapters
-    if (!(dok.kapitel||[]).length) setGelesen(true)
-  }
-
-  // For docs without chapter data, show a placeholder
-  const hasChapters = dok.kapitel && dok.kapitel.length > 0
+  const absaetze = dokumentText
+    ? dokumentText.split('\n').filter(l => l.trim().length > 0)
+    : []
 
   return (
     <div className="fade-up" style={{maxWidth:820,margin:"0 auto",padding:"28px 24px"}}>
@@ -213,46 +211,43 @@ function Reader({ modul, dok, onWeiter, onBack }) {
           </div>
         </div>
 
-        <div style={{padding:"8px 24px",borderBottom:`1px solid ${C.borderLight}`,display:"flex",justifyContent:"flex-end"}}>
-          <button onClick={allOpen} style={{background:"none",border:"none",cursor:"pointer",fontSize:12,color:C.info,fontFamily:"'Source Sans 3',sans-serif"}}>
-            Alle Abschnitte aufklappen
-          </button>
-        </div>
-
-        <div ref={ref} style={{maxHeight:"52vh",overflowY:"auto",padding:"16px 24px"}}>
-          {!hasChapters ? (
+        <div ref={ref} style={{maxHeight:"55vh",overflowY:"auto",padding:"20px 24px"}}>
+          {loading ? (
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"48px",gap:12,color:C.textMuted}}>
+              <Spinner size={24} color={C.accent}/><span>Dokument wird geladen…</span>
+            </div>
+          ) : !dokumentText ? (
             <div style={{padding:"32px",textAlign:"center",color:C.textMuted}}>
               <Icon n="docs" s={40} c={C.textDim}/>
-              <p style={{marginTop:12,fontSize:14}}>Das Dokument wird nach dem Produktiv-Deployment aus der hochgeladenen Datei geladen.</p>
-              <p style={{marginTop:8,fontSize:13,color:C.textDim}}>Bitte scrollen Sie nach unten um fortzufahren.</p>
+              <p style={{marginTop:12,fontSize:14,fontWeight:600}}>Dokument noch nicht verfügbar</p>
+              <p style={{marginTop:6,fontSize:13,color:C.textDim}}>Die Datei d{dok.nr}.docx wurde noch nicht hochgeladen.</p>
+              <button className="btn btn-ghost" style={{marginTop:16,fontSize:12}} onClick={()=>setGelesen(true)}>
+                Trotzdem fortfahren
+              </button>
             </div>
           ) : (
-            (dok.kapitel||[]).map(k => (
-              <div key={k.nr} style={{marginBottom:2}}>
-                <button onClick={()=>toggle(k.nr)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:"none",border:"none",cursor:"pointer",padding:"11px 0",textAlign:"left",borderBottom:`1px solid ${C.borderLight}`}}>
-                  <span style={{fontWeight:600,fontSize:15,color:C.text,display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{color:C.accent,fontSize:13,minWidth:20}}>{k.nr}.</span>{k.titel}
-                  </span>
-                  <Icon n={exp[k.nr]?"down":"right"} s={14} c={C.textMuted}/>
-                </button>
-                {exp[k.nr] && (
-                  <div style={{paddingLeft:28,paddingTop:10,paddingBottom:12}}>
-                    {k.inhalt && <p style={{color:C.textMuted,fontSize:14,lineHeight:1.85,whiteSpace:"pre-line"}}>{k.inhalt}</p>}
-                    {(k.unterkapitel||[]).map(u => (
-                      <div key={u.nr} style={{marginTop:8}}>
-                        <button onClick={()=>toggle(u.nr)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",background:exp[u.nr]?C.surfaceAlt:"none",border:"none",cursor:"pointer",padding:"7px 10px",borderRadius:6,textAlign:"left"}}>
-                          <span style={{fontWeight:600,fontSize:14,color:C.text,display:"flex",alignItems:"center",gap:8}}>
-                            <span style={{color:C.accent,fontSize:12}}>{u.nr}</span>{u.titel}
-                          </span>
-                          <Icon n={exp[u.nr]?"down":"right"} s={13} c={C.textMuted}/>
-                        </button>
-                        {exp[u.nr] && <p style={{padding:"8px 10px 4px",color:C.textMuted,fontSize:14,lineHeight:1.85,whiteSpace:"pre-line"}}>{u.inhalt}</p>}
-                      </div>
-                    ))}
+            <div>
+              {absaetze.map((absatz, i) => {
+                const isWarning = /warnung|gefahr|vorsicht|verboten/i.test(absatz)
+                const isHeading = absatz.length < 80 && !absatz.endsWith('.') && /^\d+\.|^[A-ZÄÖÜ]/.test(absatz)
+                const isBullet = /^[•\-–·]/.test(absatz)
+                if (isWarning) return (
+                  <div key={i} style={{margin:"10px 0",padding:"10px 14px",background:C.warningBg,border:`1px solid ${C.warningBdr}`,borderRadius:7,fontSize:13,color:C.warning,display:"flex",gap:8,alignItems:"flex-start"}}>
+                    <Icon n="warn" s={15} c={C.warning}/><span>{absatz}</span>
                   </div>
-                )}
-              </div>
-            ))
+                )
+                if (isHeading) return (
+                  <h3 key={i} style={{fontSize:15,fontWeight:700,color:C.text,margin:"18px 0 8px",paddingBottom:6,borderBottom:`1px solid ${C.borderLight}`}}>{absatz}</h3>
+                )
+                if (isBullet) return (
+                  <div key={i} style={{display:"flex",gap:8,margin:"4px 0",paddingLeft:8}}>
+                    <span style={{color:C.accent,flexShrink:0}}>•</span>
+                    <span style={{fontSize:14,color:C.textMuted,lineHeight:1.7}}>{absatz.replace(/^[•\-–·]\s*/,'')}</span>
+                  </div>
+                )
+                return <p key={i} style={{fontSize:14,color:C.textMuted,lineHeight:1.85,margin:"6px 0"}}>{absatz}</p>
+              })}
+            </div>
           )}
           <div style={{textAlign:"center",padding:"24px 0 8px",fontSize:12,color:C.textDim}}>— Ende des Dokuments —</div>
         </div>
@@ -271,19 +266,72 @@ function Reader({ modul, dok, onWeiter, onBack }) {
 }
 
 // ── QUIZ ──────────────────────────────────────────────────────────────────────
-const DEFAULT_FRAGEN = (dok) => [
-  {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen und verstanden.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
-  {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln bei meiner Arbeit einhalten.",optionen:["Ja, ich werde sie einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
-  {id:3,frage:"Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.",optionen:["Ja, korrekt","Nein, ich handle eigenständig"],richtig:0,erklaerung:"Rückfragen sind immer erwünscht."},
-]
-
 function Quiz({ user, modul, dok, onDone, onBack }) {
-  const fragen = dok.fragen || DEFAULT_FRAGEN(dok)
+  const [fragen, setFragen] = useState(null)
+  const [loadingFragen, setLoadingFragen] = useState(true)
+  const [generatingMsg, setGeneratingMsg] = useState('')
   const [idx, setIdx] = useState(0)
   const [ans, setAns] = useState({})
   const [conf, setConf] = useState(false)
   const [finished, setFinished] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Fragen laden oder generieren
+  useEffect(() => {
+    const load = async () => {
+      setLoadingFragen(true)
+
+      // Zuerst aus DB laden
+      const gespeichert = await loadFragen(dok.id)
+      if (gespeichert && gespeichert.length > 0) {
+        setFragen(gespeichert)
+        setLoadingFragen(false)
+        return
+      }
+
+      // Nicht vorhanden → per Claude API generieren
+      setGeneratingMsg('Dokument wird analysiert…')
+      const text = await loadDokumentText(dok.nr)
+
+      if (!text) {
+        // Fallback-Fragen wenn kein Dokument vorhanden
+        setFragen([
+          {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
+          {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
+          {id:3,frage:"Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.",optionen:["Ja, korrekt","Nein"],richtig:0,erklaerung:"Rückfragen sind immer erwünscht."},
+        ])
+        setLoadingFragen(false)
+        return
+      }
+
+      setGeneratingMsg('KI generiert Prüfungsfragen…')
+      const generiert = await generateFragen(text, dok.titel, dok.typ)
+
+      if (generiert && generiert.length > 0) {
+        // In DB speichern für nächstes Mal
+        await saveFragen(dok.id, generiert)
+        setFragen(generiert)
+      } else {
+        // Fallback
+        setFragen([
+          {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
+          {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
+        ])
+      }
+      setLoadingFragen(false)
+    }
+    load()
+  }, [dok.id, dok.nr])
+
+  if (loadingFragen) return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:16,color:C.textMuted}}>
+      <Spinner size={32} color={C.accent}/>
+      <div style={{textAlign:"center"}}>
+        <p style={{fontWeight:600,color:C.text}}>{generatingMsg || 'Fragen werden geladen…'}</p>
+        <p style={{fontSize:13,marginTop:4}}>Die KI analysiert das Dokument und erstellt passende Prüfungsfragen.</p>
+      </div>
+    </div>
+  )
 
   const q = fragen[idx]
   const chosen = ans[idx]
@@ -296,12 +344,9 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
     const datum = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
     const nachweisId = `PSA-${Date.now().toString(36).toUpperCase()}`
     await supabase.from('nachweise').insert({
-      ma_id: user.id,
-      dok_id: dok.id,
-      score,
-      total: fragen.length,
-      nachweis_id: nachweisId,
-      datum,
+      ma_id: user.id, dok_id: dok.id,
+      score, total: fragen.length,
+      nachweis_id: nachweisId, datum,
     })
     generateCert(user, modul, dok, score, fragen.length, datum, nachweisId)
     setSaving(false)
@@ -316,7 +361,7 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
         <div style={{fontSize:40,fontWeight:700,color:passed?C.success:C.danger,margin:"14px 0"}}>{score}/{fragen.length}</div>
         <p style={{color:C.textMuted,fontSize:14,marginBottom:28,lineHeight:1.7}}>
           {passed
-            ? `Du hast ${score} von ${fragen.length} Fragen korrekt beantwortet. Dein Schulungsnachweis wird jetzt gespeichert und heruntergeladen.`
+            ? `Du hast ${score} von ${fragen.length} Fragen korrekt beantwortet. Dein Schulungsnachweis wird gespeichert und heruntergeladen.`
             : `Mindestens ${Math.ceil(fragen.length*0.8)} Richtige erforderlich. Bitte das Dokument erneut lesen.`}
         </p>
         <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
@@ -345,9 +390,9 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
         <div style={{padding:"14px 24px",display:"flex",flexDirection:"column",gap:8}}>
           {q.optionen.map((opt,i) => {
             let bg=C.surface,bc=C.border,tc=C.text
-            if (chosen===i&&!conf){bg=C.accentBg;bc=C.accent}
-            if (conf&&i===q.richtig){bg=C.successBg;bc=C.successBdr;tc=C.success}
-            if (conf&&chosen===i&&i!==q.richtig){bg=C.dangerBg;bc=C.dangerBdr;tc=C.danger}
+            if(chosen===i&&!conf){bg=C.accentBg;bc=C.accent}
+            if(conf&&i===q.richtig){bg=C.successBg;bc=C.successBdr;tc=C.success}
+            if(conf&&chosen===i&&i!==q.richtig){bg=C.dangerBg;bc=C.dangerBdr;tc=C.danger}
             return (
               <div key={i} onClick={()=>!conf&&setAns(a=>({...a,[idx]:i}))}
                 style={{border:`1px solid ${bc}`,borderRadius:8,padding:"11px 15px",cursor:conf?"default":"pointer",background:bg,color:tc,display:"flex",alignItems:"center",gap:12,transition:"all .15s",fontSize:14}}>
@@ -412,7 +457,7 @@ function generateCert(user, modul, dok, score, total, datum, nachweisId) {
   a.href=cv.toDataURL("image/png");a.click()
 }
 
-// ── MAIN EMPLOYEE APP ─────────────────────────────────────────────────────────
+// ── MAIN ──────────────────────────────────────────────────────────────────────
 export default function EmployeeApp() {
   const [user, setUser] = useState(null)
   const [screen, setScreen] = useState('overview')
@@ -426,7 +471,6 @@ export default function EmployeeApp() {
 
   return (
     <>
-      {/* Topbar */}
       <div style={{position:"sticky",top:0,zIndex:100,background:C.surface,borderBottom:`1px solid ${C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
         <div style={{maxWidth:860,margin:"0 auto",padding:"11px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -445,13 +489,11 @@ export default function EmployeeApp() {
           </div>
         </div>
       </div>
-
       <div style={{minHeight:"calc(100vh - 53px)",background:C.bg}}>
-        {screen==="overview" && <Overview user={user} onSelect={pick} onLogout={logout}/>}
+        {screen==="overview" && <Overview user={user} onSelect={pick}/>}
         {screen==="read" && dok && <Reader modul={modul} dok={dok} onWeiter={()=>setScreen("quiz")} onBack={()=>setScreen("overview")}/>}
         {screen==="quiz" && dok && <Quiz user={user} modul={modul} dok={dok} onDone={()=>setScreen("overview")} onBack={()=>setScreen("read")}/>}
       </div>
-
       <div style={{borderTop:`1px solid ${C.border}`,padding:"12px 24px",textAlign:"center",fontSize:11,color:C.textDim,background:C.surface}}>
         © PSArbeitssicherheit GmbH · Solingen · E-Learning Portal
       </div>
