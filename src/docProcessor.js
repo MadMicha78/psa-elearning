@@ -1,4 +1,4 @@
-import { default: JSZip } from 'jszip'
+const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default
 import { supabase } from './supabase.js'
 
 // ── Dokument aus Supabase Storage laden und Text extrahieren ──────────────────
