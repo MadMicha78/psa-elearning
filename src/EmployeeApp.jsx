@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { loadDokumentUrl, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
 import { supabase } from './supabase.js'
 import { C } from './theme.js'
 import { Icon, Badge, ProgressBar, Spinner } from './components.jsx'
