@@ -258,7 +258,7 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
         {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln bei meiner Arbeit einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
         {id:3,frage:"Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.",optionen:["Ja, korrekt","Nein, ich handle eigenständig"],richtig:0,erklaerung:"Rückfragen sind immer erwünscht."},
       ]
-      const generiert = await generateFragen(dok.titel, dok.titel, dok.typ)
+   const generiert = await generateFragen(dok.id, dok.titel)
       if (generiert && generiert.length > 0) {
         await saveFragen(dok.id, generiert)
         setFragen(generiert)
