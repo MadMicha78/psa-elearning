@@ -14,18 +14,16 @@ export async function loadDokumentUrl(dokNr) {
   }
 }
 
-export async function generateFragen(dokumentTitel) {
+export async function loadDokumentUrl(dokNr) {
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: 'Arbeitssicherheitsexperte. Nur JSON-Array zurueckgeben.',
-        messages: [{ role: 'user', content: 'Erstelle 5 Pruefungsfragen zu: "' + dokumentTitel + '". Format: [{"id":1,"frage":"?","optionen":["A","B","C","D"],"richtig":0,"erklaerung":"..."}]' }]
-      })
-    })
+    const { data } = supabase.storage
+      .from('dokumente')
+      .getPublicUrl('d' + dokNr + '.pdf')
+    return data ? data.publicUrl : null
+  } catch (e) {
+    return null
+  }
+}
     const data = await response.json()
     const text = data.content && data.content[0] ? data.content[0].text : ''
     const match = text.match(/\[[\s\S]*\]/)
