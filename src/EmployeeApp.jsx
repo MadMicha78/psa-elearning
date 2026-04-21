@@ -1,10 +1,9 @@
-import { loadDokumentUrl, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase.js'
 import { C } from './theme.js'
 import { Icon, Badge, ProgressBar, Spinner } from './components.jsx'
-import { loadDokumentText, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
+import { loadDokumentUrl, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
 function Login({ onLogin }) {
   const [name, setName] = useState('')
   const [personal, setPersonal] = useState('')
@@ -64,7 +63,6 @@ function Login({ onLogin }) {
   )
 }
 
-// ── OVERVIEW ──────────────────────────────────────────────────────────────────
 function Overview({ user, onSelect }) {
   const [modules, setModules] = useState([])
   const [docs, setDocs] = useState([])
@@ -160,36 +158,23 @@ function Overview({ user, onSelect }) {
   )
 }
 
-// ── READER ────────────────────────────────────────────────────────────────────
 function Reader({ modul, dok, onWeiter, onBack }) {
   const [gelesen, setGelesen] = useState(false)
-  const [dokumentText, setDokumentText] = useState(null)
+  const [pdfUrl, setPdfUrl] = useState(null)
   const [loading, setLoading] = useState(true)
-  const ref = useRef(null)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const text = await loadDokumentText(dok.nr)
-      setDokumentText(text)
+      const url = await loadDokumentUrl(dok.nr)
+      setPdfUrl(url)
       setLoading(false)
     }
     load()
   }, [dok.nr])
 
-  useEffect(() => {
-    const el = ref.current; if (!el) return
-    const fn = () => { if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) setGelesen(true) }
-    el.addEventListener('scroll', fn)
-    return () => el.removeEventListener('scroll', fn)
-  }, [loading])
-
-  const absaetze = dokumentText
-    ? dokumentText.split('\n').filter(l => l.trim().length > 0)
-    : []
-
   return (
-    <div className="fade-up" style={{maxWidth:820,margin:"0 auto",padding:"28px 24px"}}>
+    <div className="fade-up" style={{maxWidth:900,margin:"0 auto",padding:"28px 24px"}}>
       <button className="btn btn-ghost" style={{marginBottom:18,fontSize:13}} onClick={onBack}>
         <Icon n="back" s={14}/>Zurück zur Übersicht
       </button>
@@ -198,64 +183,47 @@ function Reader({ modul, dok, onWeiter, onBack }) {
           <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
             <Badge color={C.accent} bg={C.accentBg}>MODUL {modul.nr}</Badge>
             <Badge color={C.textMuted} bg={C.surfaceAlt}>DOK {dok.nr}</Badge>
-            <Badge color={dok.typ==='A'?C.info:C.warning} bg={dok.typ==='A'?C.infoBg:C.warningBg} bdr={dok.typ==='A'?C.infoBdr:C.warningBdr}>
-              {dok.typ==='A'?'Tabellen-Format':'Fließtext'}
-            </Badge>
           </div>
           <h1 style={{fontSize:20,fontWeight:700,marginBottom:3}}>{dok.titel}</h1>
           <p style={{fontSize:12,color:C.textMuted}}>Version {dok.version} · Stand {dok.stand}</p>
-          <div style={{marginTop:12,display:"flex",alignItems:"center",gap:12}}>
-            <span style={{fontSize:12,color:C.textMuted,whiteSpace:"nowrap"}}>Lesefortschritt</span>
-            <ProgressBar value={gelesen?1:0} max={1}/>
-            {gelesen && <Badge color={C.success} bg={C.successBg} bdr={C.successBdr}><Icon n="check" s={11} c={C.success}/>Gelesen</Badge>}
-          </div>
         </div>
 
-        <div ref={ref} style={{maxHeight:"55vh",overflowY:"auto",padding:"20px 24px"}}>
+        <div>
           {loading ? (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"48px",gap:12,color:C.textMuted}}>
               <Spinner size={24} color={C.accent}/><span>Dokument wird geladen…</span>
             </div>
-          ) : !dokumentText ? (
+          ) : !pdfUrl ? (
             <div style={{padding:"32px",textAlign:"center",color:C.textMuted}}>
               <Icon n="docs" s={40} c={C.textDim}/>
-              <p style={{marginTop:12,fontSize:14,fontWeight:600}}>Dokument noch nicht verfügbar</p>
-              <p style={{marginTop:6,fontSize:13,color:C.textDim}}>Die Datei d{dok.nr}.docx wurde noch nicht hochgeladen.</p>
-              <button className="btn btn-ghost" style={{marginTop:16,fontSize:12}} onClick={()=>setGelesen(true)}>
+              <p style={{marginTop:12,fontSize:14,fontWeight:600}}>Dokument nicht verfügbar</p>
+              <p style={{marginTop:6,fontSize:13,color:C.textDim}}>Die Datei d{dok.nr}.pdf wurde noch nicht hochgeladen.</p>
+              <button className="btn btn-ghost" style={{marginTop:16}} onClick={()=>setGelesen(true)}>
                 Trotzdem fortfahren
               </button>
             </div>
           ) : (
-            <div>
-              {absaetze.map((absatz, i) => {
-                const isWarning = /warnung|gefahr|vorsicht|verboten/i.test(absatz)
-                const isHeading = absatz.length < 80 && !absatz.endsWith('.') && /^\d+\.|^[A-ZÄÖÜ]/.test(absatz)
-                const isBullet = /^[•\-–·]/.test(absatz)
-                if (isWarning) return (
-                  <div key={i} style={{margin:"10px 0",padding:"10px 14px",background:C.warningBg,border:`1px solid ${C.warningBdr}`,borderRadius:7,fontSize:13,color:C.warning,display:"flex",gap:8,alignItems:"flex-start"}}>
-                    <Icon n="warn" s={15} c={C.warning}/><span>{absatz}</span>
-                  </div>
-                )
-                if (isHeading) return (
-                  <h3 key={i} style={{fontSize:15,fontWeight:700,color:C.text,margin:"18px 0 8px",paddingBottom:6,borderBottom:`1px solid ${C.borderLight}`}}>{absatz}</h3>
-                )
-                if (isBullet) return (
-                  <div key={i} style={{display:"flex",gap:8,margin:"4px 0",paddingLeft:8}}>
-                    <span style={{color:C.accent,flexShrink:0}}>•</span>
-                    <span style={{fontSize:14,color:C.textMuted,lineHeight:1.7}}>{absatz.replace(/^[•\-–·]\s*/,'')}</span>
-                  </div>
-                )
-                return <p key={i} style={{fontSize:14,color:C.textMuted,lineHeight:1.85,margin:"6px 0"}}>{absatz}</p>
-              })}
-            </div>
+            <iframe
+              src={pdfUrl}
+              style={{width:"100%",height:"65vh",border:"none",display:"block"}}
+              title={dok.titel}
+            />
           )}
-          <div style={{textAlign:"center",padding:"24px 0 8px",fontSize:12,color:C.textDim}}>— Ende des Dokuments —</div>
         </div>
 
         <div style={{padding:"14px 24px",borderTop:`1px solid ${C.border}`,background:C.bg,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <p style={{fontSize:13,color:gelesen?C.success:C.textMuted,display:"flex",alignItems:"center",gap:6}}>
-            {gelesen ? <><Icon n="check" s={14} c={C.success}/>Dokument vollständig gelesen</> : "Bitte bis zum Ende scrollen"}
-          </p>
+          {!gelesen ? (
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <p style={{fontSize:13,color:C.textMuted}}>Dokument vollständig gelesen?</p>
+              <button style={{display:"inline-flex",alignItems:"center",gap:6,padding:"7px 16px",fontSize:13,fontWeight:600,background:C.successBg,color:C.success,border:`1px solid ${C.successBdr}`,borderRadius:6,cursor:"pointer"}} onClick={()=>setGelesen(true)}>
+                <Icon n="check" s={14} c={C.success}/>Ja, gelesen
+              </button>
+            </div>
+          ) : (
+            <p style={{fontSize:13,color:C.success,display:"flex",alignItems:"center",gap:6}}>
+              <Icon n="check" s={14} c={C.success}/>Dokument vollständig gelesen
+            </p>
+          )}
           <button className="btn btn-primary" disabled={!gelesen} onClick={onWeiter}>
             Zum Quiz <Icon n="right" s={14} c="#fff"/>
           </button>
@@ -265,7 +233,6 @@ function Reader({ modul, dok, onWeiter, onBack }) {
   )
 }
 
-// ── QUIZ ──────────────────────────────────────────────────────────────────────
 function Quiz({ user, modul, dok, onDone, onBack }) {
   const [fragen, setFragen] = useState(null)
   const [loadingFragen, setLoadingFragen] = useState(true)
@@ -276,59 +243,39 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
   const [finished, setFinished] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  // Fragen laden oder generieren
   useEffect(() => {
     const load = async () => {
       setLoadingFragen(true)
-
-      // Zuerst aus DB laden
       const gespeichert = await loadFragen(dok.id)
       if (gespeichert && gespeichert.length > 0) {
         setFragen(gespeichert)
         setLoadingFragen(false)
         return
       }
-
-      // Nicht vorhanden → per Claude API generieren
-      setGeneratingMsg('Dokument wird analysiert…')
-      const text = await loadDokumentText(dok.nr)
-
-      if (!text) {
-        // Fallback-Fragen wenn kein Dokument vorhanden
-        setFragen([
-          {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
-          {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
-          {id:3,frage:"Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.",optionen:["Ja, korrekt","Nein"],richtig:0,erklaerung:"Rückfragen sind immer erwünscht."},
-        ])
-        setLoadingFragen(false)
-        return
-      }
-
       setGeneratingMsg('KI generiert Prüfungsfragen…')
-      const generiert = await generateFragen(text, dok.titel, dok.typ)
-
+      const fallback = [
+        {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
+        {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln bei meiner Arbeit einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
+        {id:3,frage:"Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.",optionen:["Ja, korrekt","Nein, ich handle eigenständig"],richtig:0,erklaerung:"Rückfragen sind immer erwünscht."},
+      ]
+      const generiert = await generateFragen(dok.titel, dok.titel, dok.typ)
       if (generiert && generiert.length > 0) {
-        // In DB speichern für nächstes Mal
         await saveFragen(dok.id, generiert)
         setFragen(generiert)
       } else {
-        // Fallback
-        setFragen([
-          {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:["Ja, vollständig gelesen","Nein, nicht gelesen"],richtig:0,erklaerung:"Danke für die Bestätigung."},
-          {id:2,frage:"Ich werde die beschriebenen Sicherheitsregeln einhalten.",optionen:["Ja, werde ich einhalten","Nein"],richtig:0,erklaerung:"Arbeitssicherheit hat oberste Priorität."},
-        ])
+        setFragen(fallback)
       }
       setLoadingFragen(false)
     }
     load()
-  }, [dok.id, dok.nr])
+  }, [dok.id])
 
   if (loadingFragen) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"60vh",gap:16,color:C.textMuted}}>
       <Spinner size={32} color={C.accent}/>
       <div style={{textAlign:"center"}}>
         <p style={{fontWeight:600,color:C.text}}>{generatingMsg || 'Fragen werden geladen…'}</p>
-        <p style={{fontSize:13,marginTop:4}}>Die KI analysiert das Dokument und erstellt passende Prüfungsfragen.</p>
+        <p style={{fontSize:13,marginTop:4}}>Einen Moment bitte.</p>
       </div>
     </div>
   )
@@ -376,7 +323,9 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
 
   return (
     <div className="fade-up" style={{maxWidth:700,margin:"0 auto",padding:"28px 24px"}}>
-      <button className="btn btn-ghost" style={{marginBottom:18,fontSize:13}} onClick={onBack}><Icon n="back" s={14}/>Zurück zum Dokument</button>
+      <button className="btn btn-ghost" style={{marginBottom:18,fontSize:13}} onClick={onBack}>
+        <Icon n="back" s={14}/>Zurück zum Dokument
+      </button>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
         <span style={{fontSize:12,color:C.textMuted,fontWeight:600,whiteSpace:"nowrap"}}>Frage {idx+1} von {fragen.length}</span>
         <div style={{background:C.borderLight,borderRadius:4,height:5,overflow:"hidden",flex:1}}>
@@ -422,7 +371,6 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
   )
 }
 
-// ── PDF CERTIFICATE ───────────────────────────────────────────────────────────
 function generateCert(user, modul, dok, score, total, datum, nachweisId) {
   const w=794,h=561,cv=document.createElement("canvas")
   cv.width=w;cv.height=h;const ctx=cv.getContext("2d")
@@ -431,33 +379,39 @@ function generateCert(user, modul, dok, score, total, datum, nachweisId) {
   ctx.fillStyle="#fdf5f4";ctx.fillRect(0,h-55,w,55)
   ctx.fillStyle="#c0392b";ctx.fillRect(0,0,w,5)
   ctx.fillStyle="#c0392b";ctx.fillRect(0,h-5,w,5)
-  ctx.fillStyle="#c0392b";ctx.font="bold 13px sans-serif";ctx.textAlign="left";ctx.fillText("■ PSArbeitssicherheit GmbH  —  Schulungsnachweis",32,38)
-  ctx.fillStyle="#6c757d";ctx.font="11px sans-serif";ctx.textAlign="right";ctx.fillText("Solingen · psarbeitssicherheit.de",w-32,38)
+  ctx.fillStyle="#c0392b";ctx.font="bold 13px sans-serif";ctx.textAlign="left"
+  ctx.fillText("PSArbeitssicherheit GmbH  —  Schulungsnachweis",32,38)
+  ctx.fillStyle="#6c757d";ctx.font="11px sans-serif";ctx.textAlign="right"
+  ctx.fillText("Solingen · psarbeitssicherheit.de",w-32,38)
   ctx.textAlign="center"
   ctx.fillStyle="#1a1a2e";ctx.font="bold 30px sans-serif";ctx.fillText("Nachweis der Unterweisung",w/2,122)
   ctx.strokeStyle="#dee2e6";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,138);ctx.lineTo(w-60,138);ctx.stroke()
   ctx.fillStyle="#6c757d";ctx.font="14px sans-serif";ctx.fillText("Hiermit wird bestätigt, dass",w/2,174)
   ctx.fillStyle="#c0392b";ctx.font="bold 26px sans-serif";ctx.fillText(user.name,w/2,212)
   ctx.fillStyle="#adb5bd";ctx.font="11px monospace";ctx.fillText("Personal-Nr.: "+user.personal,w/2,234)
-  ctx.fillStyle="#6c757d";ctx.font="13px sans-serif";ctx.fillText("das folgende Dokument gelesen und die Prüfungsfragen erfolgreich beantwortet hat:",w/2,268)
+  ctx.fillStyle="#6c757d";ctx.font="13px sans-serif"
+  ctx.fillText("das folgende Dokument gelesen und die Prüfungsfragen erfolgreich beantwortet hat:",w/2,268)
   ctx.fillStyle="#fdf5f4";ctx.beginPath();ctx.roundRect(190,282,w-380,68,8);ctx.fill()
   ctx.strokeStyle="#f5b7b1";ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(190,282,w-380,68,8);ctx.stroke()
   ctx.fillStyle="#1a1a2e";ctx.font="bold 15px sans-serif";ctx.fillText(`DOK ${dok.nr} – ${dok.titel}`,w/2,310)
-  ctx.fillStyle="#6c757d";ctx.font="12px sans-serif";ctx.fillText(`Modul ${modul.nr}: ${modul.name}  ·  Version ${dok.version}`,w/2,334)
-  ctx.fillStyle="#2d6a4f";ctx.font="bold 13px sans-serif";ctx.fillText(`Ergebnis: ${score} von ${total} Fragen richtig (${Math.round(score/total*100)}%)`,w/2,386)
+  ctx.fillStyle="#6c757d";ctx.font="12px sans-serif"
+  ctx.fillText(`Modul ${modul.nr}: ${modul.name}  ·  Version ${dok.version}`,w/2,334)
+  ctx.fillStyle="#2d6a4f";ctx.font="bold 13px sans-serif"
+  ctx.fillText(`Ergebnis: ${score} von ${total} Fragen richtig (${Math.round(score/total*100)}%)`,w/2,386)
   ctx.fillStyle="#2d6a4f";ctx.fillRect(w/2-44,395,88,3)
   ctx.strokeStyle="#dee2e6";ctx.lineWidth=1
   ctx.beginPath();ctx.moveTo(80,455);ctx.lineTo(280,455);ctx.stroke()
   ctx.beginPath();ctx.moveTo(w-280,455);ctx.lineTo(w-80,455);ctx.stroke()
   ctx.fillStyle="#6c757d";ctx.font="11px sans-serif"
-  ctx.textAlign="center";ctx.fillText("Datum: "+datum,180,474);ctx.fillText("Unterschrift Vorgesetzter / FASI",w-180,474)
-  ctx.fillStyle="#adb5bd";ctx.font="9px monospace";ctx.fillText(`Nachweis-ID: ${nachweisId}  ·  PSArbeitssicherheit GmbH  ·  Solingen`,w/2,520)
+  ctx.fillText("Datum: "+datum,180,474)
+  ctx.fillText("Unterschrift Vorgesetzter / FASI",w-180,474)
+  ctx.fillStyle="#adb5bd";ctx.font="9px monospace"
+  ctx.fillText(`Nachweis-ID: ${nachweisId}  ·  PSArbeitssicherheit GmbH  ·  Solingen`,w/2,520)
   const a=document.createElement("a")
   a.download=`Schulungsnachweis_${user.name.replace(/ /g,"_")}_DOK${dok.nr}.png`
   a.href=cv.toDataURL("image/png");a.click()
 }
 
-// ── MAIN ──────────────────────────────────────────────────────────────────────
 export default function EmployeeApp() {
   const [user, setUser] = useState(null)
   const [screen, setScreen] = useState('overview')
@@ -472,7 +426,7 @@ export default function EmployeeApp() {
   return (
     <>
       <div style={{position:"sticky",top:0,zIndex:100,background:C.surface,borderBottom:`1px solid ${C.border}`,boxShadow:"0 1px 4px rgba(0,0,0,.07)"}}>
-        <div style={{maxWidth:860,margin:"0 auto",padding:"11px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{maxWidth:900,margin:"0 auto",padding:"11px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{background:C.accent,borderRadius:6,padding:"5px 7px",display:"flex"}}><Icon n="shield" s={15} c="#fff"/></div>
             <span style={{fontWeight:700,fontSize:14}}>PSArbeitssicherheit</span>
