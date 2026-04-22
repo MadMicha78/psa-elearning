@@ -225,7 +225,7 @@ function Reader({ modul, dok, onWeiter, onBack }) {
             </p>
           )}
           <button className="btn btn-primary" disabled={!gelesen} onClick={onWeiter}>
-            Zum Quiz <Icon n="right" s={14} c="#fff"/>
+            Zur Wissensabfrage <Icon n="right" s={14} c="#fff"/>
           </button>
         </div>
       </div>
