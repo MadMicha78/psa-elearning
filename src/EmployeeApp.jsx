@@ -106,20 +106,20 @@ function Overview({ user, onSelect }) {
 
   return (
     <div className="fade-up" style={{maxWidth:900,margin:'0 auto',padding:'40px 24px'}}>
-      <div style={{background:`linear-gradient(135deg, ${C.navy} 0%, ${C.navyMid} 100%)`,borderRadius:16,padding:'32px 36px',marginBottom:32,position:'relative',overflow:'hidden'}}>
+      <div style={{background:'linear-gradient(135deg, #0f1e35 0%, #1a3150 100%)',borderRadius:16,padding:'32px 36px',marginBottom:32,position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',top:-20,right:-20,width:200,height:200,borderRadius:'50%',background:'rgba(192,57,43,0.12)'}}/>
         <div style={{position:'absolute',bottom:-40,right:60,width:140,height:140,borderRadius:'50%',background:'rgba(192,57,43,0.08)'}}/>
         <div style={{position:'relative',zIndex:1,display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:20}}>
           <div>
-            <p style={{fontSize:11,fontWeight:600,color:'rgba(192,57,43,0.9)',letterSpacing:'.08em',marginBottom:8,textTransform:'uppercase'}}>Schulungsportal</p>
-            <h1 style={{fontSize:28,fontWeight:700,color:'#fff',marginBottom:6}}>Willkommen, {user.name.split(' ')[0]}</h1>
-            <p style={{fontSize:14,color:'rgba(180,200,230,0.8)',margin:0}}>Personal-Nr.: <strong style={{color:'rgba(220,235,255,0.9)'}}>{user.personal}</strong></p>
+            <p style={{fontSize:11,fontWeight:600,color:'#f1948a',letterSpacing:'.08em',marginBottom:8,textTransform:'uppercase'}}>Schulungsportal</p>
+            <h1 style={{fontSize:28,fontWeight:700,color:'#ffffff',marginBottom:6,textShadow:'0 1px 3px rgba(0,0,0,0.3)'}}>Willkommen, {user.name.split(' ')[0]}</h1>
+            <p style={{fontSize:14,color:'rgba(210,225,245,0.95)',margin:0}}>Personal-Nr.: <strong style={{color:'#ffffff'}}>{user.personal}</strong></p>
           </div>
           {total > 0 && (
-            <div style={{background:'rgba(255,255,255,0.1)',borderRadius:12,padding:'16px 24px',textAlign:'center',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)'}}>
-              <div style={{fontSize:32,fontWeight:700,color:abg===total?'#4ade80':'#fff'}}>{abg}<span style={{fontSize:16,color:'rgba(255,255,255,0.5)'}}>/{total}</span></div>
-              <div style={{fontSize:11,color:'rgba(180,200,230,0.7)',marginTop:4,letterSpacing:'.04em'}}>ABGESCHLOSSEN</div>
-              <div style={{marginTop:10,height:4,borderRadius:4,background:'rgba(255,255,255,0.15)',overflow:'hidden'}}>
+            <div style={{background:'rgba(255,255,255,0.18)',borderRadius:12,padding:'16px 24px',textAlign:'center',border:'1px solid rgba(255,255,255,0.3)'}}>
+              <div style={{fontSize:32,fontWeight:700,color:abg===total?'#4ade80':'#ffffff'}}>{abg}<span style={{fontSize:16,color:'rgba(255,255,255,0.7)'}}>/{total}</span></div>
+              <div style={{fontSize:11,color:'rgba(220,235,255,0.9)',marginTop:4,letterSpacing:'.04em',fontWeight:600}}>ABGESCHLOSSEN</div>
+              <div style={{marginTop:10,height:4,borderRadius:4,background:'rgba(255,255,255,0.3)',overflow:'hidden'}}>
                 <div style={{height:'100%',width:`${total?Math.round(abg/total*100):0}%`,background:abg===total?'#4ade80':'#c0392b',borderRadius:4,transition:'width .5s'}}/>
               </div>
             </div>
