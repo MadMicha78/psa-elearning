@@ -13,191 +13,64 @@ function Login({ onLogin }) {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState('')
   const [mounted, setMounted] = useState(false)
-
   useEffect(() => { setMounted(true) }, [])
 
   const go = async () => {
     if (!name.trim() || !personal.trim()) { setErr('Bitte alle Felder ausfüllen.'); return }
     setLoading(true); setErr('')
-    const { data, error } = await supabase
-      .from('mitarbeiter').select('*')
-      .eq('personal', personal.trim())
-      .ilike('name', name.trim())
-      .single()
+    const { data, error } = await supabase.from('mitarbeiter').select('*').eq('personal', personal.trim()).ilike('name', name.trim()).single()
     setLoading(false)
     if (error || !data) { setErr('Mitarbeiter nicht gefunden. Bitte Name und Personalnummer prüfen.'); return }
     onLogin(data)
   }
 
-  return (
-    <div style={{position:'relative',minHeight:'100vh',overflow:'hidden',background:'#111827',fontFamily:'Inter,ui-sans-serif,system-ui,sans-serif'}}>
-      {/* Hintergrundbild */}
-      <img
-        src={BG_IMAGE}
-        alt="Windturbinen"
-        style={{
-          position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',
-          animation: mounted ? 'windLoadImage 1.25s ease-out both' : 'none'
-        }}
-      />
-      {/* Overlay */}
-      <div style={{
-        position:'absolute',inset:0,
-        background:'linear-gradient(90deg, rgba(15,23,42,0.18) 0%, rgba(15,23,42,0.88) 70%), linear-gradient(180deg, rgba(15,23,42,0.14) 0%, rgba(15,23,42,0.42) 100%)'
-      }}/>
-      {/* Scan-Linie oben */}
-      <div style={{
-        position:'absolute',top:0,left:0,right:0,height:3,background:'#c0392b',
-        transformOrigin:'left',
-        animation: mounted ? 'windScan 1.4s ease-out both' : 'none'
-      }}/>
-      {/* Logo oben rechts */}
-      <img
-        src={PSA_LOGO}
-        alt="PSA Arbeitssicherheit"
-        style={{
-          position:'absolute',top:24,right:24,zIndex:20,width:200,
-          background:'rgba(20,27,40,0.7)',padding:'10px 14px',
-          backdropFilter:'blur(12px)',borderRadius:4
-        }}
-      />
+  const anim = mounted ? 'windEnter 0.85s ease-out both' : 'none'
 
-      {/* Content */}
-      <section style={{
-        position:'relative',zIndex:10,
-        display:'flex',minHeight:'100vh',alignItems:'center',
-        padding:'40px 24px'
-      }}>
-        <div style={{
-          width:'100%',display:'grid',
-          gridTemplateColumns:'1fr 420px',
-          gap:40,alignItems:'center',
-          maxWidth:1200,margin:'0 auto'
-        }}>
-          {/* Links: Hero Text */}
-          <div style={{paddingTop:32, animation: mounted ? 'windEnter 0.85s ease-out both' : 'none'}}>
-            <h1 style={{
-              fontSize:64,fontWeight:600,lineHeight:1.1,
-              color:'rgba(240,245,255,0.97)',margin:'0 0 24px',
-              maxWidth:700
-            }}>
+  return (
+    <div style={{position:'relative',minHeight:'100vh',overflow:'hidden',background:'#111827',fontFamily:"'Inter',ui-sans-serif,system-ui,sans-serif"}}>
+      <img src={BG_IMAGE} alt="Windturbinen" style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',animation:mounted?'windLoadImage 1.25s ease-out both':'none'}}/>
+      <div style={{position:'absolute',inset:0,background:'linear-gradient(90deg, rgba(15,23,42,0.18) 0%, rgba(15,23,42,0.88) 70%), linear-gradient(180deg, rgba(15,23,42,0.14) 0%, rgba(15,23,42,0.42) 100%)'}}/>
+      <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:'#c0392b',transformOrigin:'left',animation:mounted?'windScan 1.4s ease-out both':'none'}}/>
+      <img src={PSA_LOGO} alt="PSA Arbeitssicherheit" style={{position:'absolute',top:24,right:40,zIndex:20,width:210,background:'rgba(20,27,40,0.7)',padding:'10px 14px',backdropFilter:'blur(12px)',borderRadius:4}}/>
+      <section style={{position:'relative',zIndex:10,display:'flex',minHeight:'100vh',alignItems:'center',padding:'40px'}}>
+        <div style={{width:'100%',display:'grid',gridTemplateColumns:'1fr 420px',gap:48,alignItems:'center',maxWidth:1200,margin:'0 auto'}}>
+          <div style={{paddingTop:32,animation:anim}}>
+            <h1 style={{fontSize:64,fontWeight:600,lineHeight:1.1,color:'rgba(240,245,255,0.97)',margin:'0 0 24px',maxWidth:700}}>
               Zugang zum<br/>Safety Hub.
             </h1>
-            <p style={{fontSize:18,lineHeight:1.7,color:'rgba(180,195,215,0.85)',maxWidth:560,margin:0}}>
+            <p style={{fontSize:18,lineHeight:1.7,color:'rgba(180,195,215,0.85)',maxWidth:520,margin:0}}>
               Für Teams, die Anlagen, Einsätze und persönliche Schutzausrüstung zuverlässig koordinieren.
             </p>
           </div>
-
-          {/* Rechts: Login Card */}
-          <div style={{
-            background:'linear-gradient(145deg, rgba(22,32,52,0.96) 0%, rgba(12,18,32,0.80) 100%)',
-            boxShadow:'0 30px 90px -32px rgba(10,15,25,0.96), inset 4px 0 0 #c0392b, inset 0 1px 0 rgba(240,245,255,0.14)',
-            backdropFilter:'blur(22px)',
-            borderRadius:8,
-            border:'1px solid rgba(220,230,255,0.18)',
-            padding:'32px',
-            animation: mounted ? 'windEnter 0.85s ease-out 0.1s both' : 'none'
-          }}>
-            <div style={{marginBottom:32}}>
-              <p style={{fontSize:12,fontWeight:600,letterSpacing:'.1em',color:'#c0392b',margin:'0 0 10px',textTransform:'uppercase'}}>
-                Sicher anmelden
-              </p>
+          <div style={{background:'linear-gradient(145deg, rgba(22,32,52,0.96) 0%, rgba(12,18,32,0.80) 100%)',boxShadow:'0 30px 90px -32px rgba(10,15,25,0.96), inset 4px 0 0 #c0392b, inset 0 1px 0 rgba(240,245,255,0.14)',backdropFilter:'blur(22px)',borderRadius:8,border:'1px solid rgba(220,230,255,0.18)',padding:'36px',animation:mounted?'windEnter 0.85s ease-out 0.1s both':'none'}}>
+            <div style={{marginBottom:28}}>
+              <p style={{fontSize:11,fontWeight:600,letterSpacing:'.1em',color:'#c0392b',margin:'0 0 10px',textTransform:'uppercase'}}>Sicher anmelden</p>
               <h2 style={{fontSize:28,fontWeight:600,color:'rgba(240,245,255,0.97)',margin:0}}>Login</h2>
             </div>
-
-            <div style={{marginBottom:20}}>
-              <label style={{display:'block',fontSize:13,fontWeight:500,color:'rgba(210,220,240,0.9)',marginBottom:8}}>
-                Name
-              </label>
-              <input
-                type="text"
-                placeholder="Vorname Nachname"
-                value={name}
-                onChange={e=>setName(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&go()}
-                style={{
-                  display:'block',width:'100%',height:48,
-                  borderRadius:8,border:'1px solid rgba(220,230,255,0.22)',
-                  background:'rgba(240,245,255,0.10)',
-                  padding:'0 16px',fontSize:14,
-                  color:'rgba(240,245,255,0.95)',
-                  outline:'none',boxSizing:'border-box',
-                  fontFamily:'inherit'
-                }}
-                onFocus={e=>{e.target.style.border='1px solid #c0392b';e.target.style.boxShadow='0 0 0 3px rgba(192,57,43,0.2)'}}
-                onBlur={e=>{e.target.style.border='1px solid rgba(220,230,255,0.22)';e.target.style.boxShadow='none'}}
-              />
-            </div>
-
-            <div style={{marginBottom:20}}>
-              <label style={{display:'block',fontSize:13,fontWeight:500,color:'rgba(210,220,240,0.9)',marginBottom:8}}>
-                Personalnummer
-              </label>
-              <input
-                type="text"
-                placeholder="z.B. MA-001"
-                value={personal}
-                onChange={e=>setPersonal(e.target.value)}
-                onKeyDown={e=>e.key==='Enter'&&go()}
-                style={{
-                  display:'block',width:'100%',height:48,
-                  borderRadius:8,border:'1px solid rgba(220,230,255,0.22)',
-                  background:'rgba(240,245,255,0.10)',
-                  padding:'0 16px',fontSize:14,
-                  color:'rgba(240,245,255,0.95)',
-                  outline:'none',boxSizing:'border-box',
-                  fontFamily:'inherit'
-                }}
-                onFocus={e=>{e.target.style.border='1px solid #c0392b';e.target.style.boxShadow='0 0 0 3px rgba(192,57,43,0.2)'}}
-                onBlur={e=>{e.target.style.border='1px solid rgba(220,230,255,0.22)';e.target.style.boxShadow='none'}}
-              />
-            </div>
-
-            {err && (
-              <div style={{
-                marginBottom:16,padding:'10px 14px',borderRadius:8,
-                background:'rgba(192,57,43,0.15)',border:'1px solid rgba(192,57,43,0.4)',
-                fontSize:13,color:'#f1948a',display:'flex',alignItems:'center',gap:8
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                {err}
+            {[['Name','Vorname Nachname',name,setName],['Personalnummer','z.B. MA-001',personal,setPersonal]].map(([label,ph,val,set],i) => (
+              <div key={label} style={{marginBottom:20}}>
+                <label style={{display:'block',fontSize:13,fontWeight:500,color:'rgba(210,220,240,0.9)',marginBottom:8}}>{label}</label>
+                <input type="text" placeholder={ph} value={val} onChange={e=>set(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()}
+                  style={{display:'block',width:'100%',height:48,borderRadius:8,border:'1px solid rgba(220,230,255,0.22)',background:'rgba(240,245,255,0.10)',padding:'0 16px',fontSize:14,color:'rgba(240,245,255,0.95)',outline:'none',boxSizing:'border-box',fontFamily:'inherit'}}
+                  onFocus={e=>{e.target.style.border='1px solid #c0392b';e.target.style.boxShadow='0 0 0 3px rgba(192,57,43,0.2)'}}
+                  onBlur={e=>{e.target.style.border='1px solid rgba(220,230,255,0.22)';e.target.style.boxShadow='none'}}
+                />
               </div>
-            )}
-
-            <button
-              onClick={go}
-              disabled={loading}
-              style={{
-                marginTop:16,width:'100%',height:48,
-                background:'#c0392b',color:'#fff',border:'none',
-                borderRadius:8,fontSize:15,fontWeight:600,
-                cursor:loading?'not-allowed':'pointer',
-                display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-                boxShadow:'0 8px 24px -8px rgba(192,57,43,0.5)',
-                transition:'transform .15s, background .15s',
-                fontFamily:'inherit',opacity:loading?0.7:1
-              }}
-              onMouseEnter={e=>{if(!loading){e.target.style.background='#96281b';e.target.style.transform='translateY(-1px)'}}}
-              onMouseLeave={e=>{if(!loading){e.target.style.background='#c0392b';e.target.style.transform='translateY(0)'}}}
-            >
+            ))}
+            {err && <div style={{marginBottom:16,padding:'10px 14px',borderRadius:8,background:'rgba(192,57,43,0.15)',border:'1px solid rgba(192,57,43,0.4)',fontSize:13,color:'#f1948a'}}>{err}</div>}
+            <button onClick={go} disabled={loading} style={{marginTop:8,width:'100%',height:48,background:'#c0392b',color:'#fff',border:'none',borderRadius:8,fontSize:15,fontWeight:600,cursor:loading?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 8px 24px -8px rgba(192,57,43,0.5)',fontFamily:'inherit',opacity:loading?0.7:1}}>
               {loading ? <Spinner/> : 'Safety Hub öffnen'}
             </button>
-
-            <p style={{marginTop:20,textAlign:'center',fontSize:13,color:'rgba(160,175,200,0.7)'}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(192,57,43,0.8)" strokeWidth="2" style={{verticalAlign:'middle',marginRight:5}}><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Schulungsnachweise werden sicher gespeichert
-            </p>
+            <p style={{marginTop:18,textAlign:'center',fontSize:12,color:'rgba(160,175,200,0.6)'}}>Schulungsnachweise werden sicher gespeichert</p>
           </div>
         </div>
       </section>
-
-      <style>{
-        `@keyframes windLoadImage { from { transform: scale(1.04); filter: saturate(0.7) contrast(0.9); } to { transform: scale(1); filter: saturate(1) contrast(1); } }
-        @keyframes windEnter { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
-        @keyframes windScan { from { transform: scaleX(0); opacity: 0; } 35% { opacity: 1; } to { transform: scaleX(1); opacity: 0.9; } }
-        input::placeholder { color: rgba(180,195,215,0.45) !important; }
-        `
-      }</style>
+      <style>{\`
+        @keyframes windLoadImage{from{transform:scale(1.04);filter:saturate(0.7) contrast(0.9)}to{transform:scale(1);filter:saturate(1) contrast(1)}}
+        @keyframes windEnter{from{opacity:0;transform:translate3d(0,18px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+        @keyframes windScan{from{transform:scaleX(0);opacity:0}35%{opacity:1}to{transform:scaleX(1);opacity:0.9}}
+        input::placeholder{color:rgba(180,195,215,0.4)!important}
+      \`}</style>
     </div>
   )
 }
@@ -227,36 +100,45 @@ function Overview({ user, onSelect }) {
 
   if (loading) return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh',gap:12,color:C.textMuted}}>
-      <Spinner size={28} color={C.accent}/> Schulungen werden geladen…
+      <Spinner size={28} color={C.accent}/> Schulungen werden geladen...
     </div>
   )
 
   return (
-    <div className="fade-up" style={{maxWidth:860,margin:'0 auto',padding:'36px 24px'}}>
-      <div style={{marginBottom:28,display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:16}}>
-        <div>
-          <p style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:'.07em',marginBottom:4}}>SCHULUNGSPORTAL</p>
-          <h1 style={{fontSize:26,fontWeight:700}}>Willkommen, {user.name.split(' ')[0]}</h1>
-          <p style={{color:C.textMuted,fontSize:14,marginTop:4}}>Personal-Nr.: <strong>{user.personal}</strong></p>
-        </div>
-        {total > 0 && (
-          <div className="card" style={{padding:'14px 20px',textAlign:'center',minWidth:140}}>
-            <div style={{fontSize:28,fontWeight:700,color:abg===total?C.success:C.accent}}>{abg}/{total}</div>
-            <div style={{fontSize:12,color:C.textMuted,marginTop:2}}>Abgeschlossen</div>
-            <div style={{marginTop:8}}><ProgressBar value={abg} max={total||1}/></div>
+    <div className="fade-up" style={{maxWidth:900,margin:'0 auto',padding:'40px 24px'}}>
+      <div style={{background:`linear-gradient(135deg, ${C.navy} 0%, ${C.navyMid} 100%)`,borderRadius:16,padding:'32px 36px',marginBottom:32,position:'relative',overflow:'hidden'}}>
+        <div style={{position:'absolute',top:-20,right:-20,width:200,height:200,borderRadius:'50%',background:'rgba(192,57,43,0.12)'}}/>
+        <div style={{position:'absolute',bottom:-40,right:60,width:140,height:140,borderRadius:'50%',background:'rgba(192,57,43,0.08)'}}/>
+        <div style={{position:'relative',zIndex:1,display:'flex',justifyContent:'space-between',alignItems:'flex-end',flexWrap:'wrap',gap:20}}>
+          <div>
+            <p style={{fontSize:11,fontWeight:600,color:'rgba(192,57,43,0.9)',letterSpacing:'.08em',marginBottom:8,textTransform:'uppercase'}}>Schulungsportal</p>
+            <h1 style={{fontSize:28,fontWeight:700,color:'#fff',marginBottom:6}}>Willkommen, {user.name.split(' ')[0]}</h1>
+            <p style={{fontSize:14,color:'rgba(180,200,230,0.8)',margin:0}}>Personal-Nr.: <strong style={{color:'rgba(220,235,255,0.9)'}}>{user.personal}</strong></p>
           </div>
-        )}
+          {total > 0 && (
+            <div style={{background:'rgba(255,255,255,0.1)',borderRadius:12,padding:'16px 24px',textAlign:'center',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)'}}>
+              <div style={{fontSize:32,fontWeight:700,color:abg===total?'#4ade80':'#fff'}}>{abg}<span style={{fontSize:16,color:'rgba(255,255,255,0.5)'}}>/{total}</span></div>
+              <div style={{fontSize:11,color:'rgba(180,200,230,0.7)',marginTop:4,letterSpacing:'.04em'}}>ABGESCHLOSSEN</div>
+              <div style={{marginTop:10,height:4,borderRadius:4,background:'rgba(255,255,255,0.15)',overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${total?Math.round(abg/total*100):0}%`,background:abg===total?'#4ade80':'#c0392b',borderRadius:4,transition:'width .5s'}}/>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
       {modules.map(m => {
         const mDocs = docs.filter(d => d.modul_id === m.id)
         return (
-          <div key={m.id} style={{marginBottom:22}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,paddingBottom:10,marginBottom:10,borderBottom:`2px solid ${C.borderLight}`,flexWrap:'wrap'}}>
+          <div key={m.id} style={{marginBottom:28}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+              <div style={{width:4,height:20,background:C.accent,borderRadius:2}}/>
               <Badge color={C.accent} bg={C.accentBg}>MODUL {m.nr}</Badge>
-              <span style={{fontWeight:700,fontSize:15}}>{m.name}</span>
+              <span style={{fontWeight:700,fontSize:16,color:C.text}}>{m.name}</span>
+              <span style={{fontSize:12,color:C.textDim,marginLeft:'auto'}}>{mDocs.filter(d=>getDone(d.id)).length}/{mDocs.length} abgeschlossen</span>
             </div>
             {mDocs.length === 0 ? (
-              <div style={{border:`1px dashed ${C.border}`,borderRadius:8,padding:'18px 20px',display:'flex',alignItems:'center',gap:10,color:C.textDim,background:C.surface}}>
+              <div style={{border:`1px dashed ${C.border}`,borderRadius:12,padding:'20px',display:'flex',alignItems:'center',gap:10,color:C.textDim,background:C.surface}}>
                 <Icon n="plus" s={15} c={C.textDim}/><span style={{fontSize:13}}>Dokumente werden in Kürze hinzugefügt</span>
               </div>
             ) : (
@@ -264,24 +146,29 @@ function Overview({ user, onSelect }) {
                 {mDocs.map(dok => {
                   const done = getDone(dok.id)
                   return (
-                    <div key={dok.id} className="card"
-                      style={{padding:'15px 18px',display:'flex',alignItems:'center',gap:14,cursor:'pointer',transition:'box-shadow .15s,border-color .15s',borderColor:done?'rgba(45,106,79,.35)':C.border}}
+                    <div key={dok.id}
+                      style={{background:C.surface,border:`1px solid ${done?'rgba(22,163,74,.25)':C.border}`,borderRadius:12,padding:'16px 20px',display:'flex',alignItems:'center',gap:16,cursor:'pointer',transition:'all .2s',boxShadow:C.shadow}}
                       onClick={() => onSelect(m, dok)}
-                      onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.shadowMd;e.currentTarget.style.borderColor=done?'rgba(45,106,79,.5)':C.accent}}
-                      onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.shadow;e.currentTarget.style.borderColor=done?'rgba(45,106,79,.35)':C.border}}>
-                      <div style={{width:40,height:40,borderRadius:8,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:done?C.successBg:C.accentBg}}>
-                        {done ? <Icon n="check" s={18} c={C.success}/> : <Icon n="docs" s={18} c={C.accent}/>}
+                      onMouseEnter={e=>{e.currentTarget.style.boxShadow=C.shadowMd;e.currentTarget.style.borderColor=done?'rgba(22,163,74,.4)':C.accent;e.currentTarget.style.transform='translateY(-1px)'}}
+                      onMouseLeave={e=>{e.currentTarget.style.boxShadow=C.shadow;e.currentTarget.style.borderColor=done?'rgba(22,163,74,.25)':C.border;e.currentTarget.style.transform='translateY(0)'}}>
+                      <div style={{width:44,height:44,borderRadius:10,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:done?C.successBg:`linear-gradient(135deg,${C.accentBg},#fff)`}}>
+                        {done ? <Icon n="check" s={20} c={C.success}/> : <Icon n="docs" s={20} c={C.accent}/>}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3,flexWrap:'wrap'}}>
-                          <span style={{fontSize:11,color:C.textMuted,fontWeight:600}}>DOK {dok.nr}</span>
-                          {done && <Badge color={C.success} bg={C.successBg} bdr={C.successBdr}>✓ Abgeschlossen · {done.datum}</Badge>}
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4,flexWrap:'wrap'}}>
+                          <span style={{fontSize:11,color:C.textDim,fontWeight:600,letterSpacing:'.04em'}}>DOK {dok.nr}</span>
+                          {done && <Badge color={C.success} bg={C.successBg} bdr={C.successBdr}>&#10003; {done.datum}</Badge>}
                         </div>
-                        <div style={{fontWeight:600,fontSize:15}}>{dok.titel}</div>
-                        <div style={{fontSize:12,color:C.textMuted}}>Version {dok.version} · Stand {dok.stand}</div>
+                        <div style={{fontWeight:600,fontSize:15,color:C.text}}>{dok.titel}</div>
+                        <div style={{fontSize:12,color:C.textMuted,marginTop:2}}>Version {dok.version} &middot; Stand {dok.stand}</div>
                       </div>
-                      <div style={{display:'flex',alignItems:'center',gap:5,color:C.textMuted,fontSize:13,flexShrink:0}}>
-                        <Icon n="clock" s={13} c={C.textMuted}/>ca. {dok.minuten} Min.<Icon n="right" s={14} c={C.textMuted}/>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
+                        <div style={{display:'flex',alignItems:'center',gap:4,color:C.textMuted,fontSize:12}}>
+                          <Icon n="clock" s={12} c={C.textMuted}/>ca. {dok.minuten} Min.
+                        </div>
+                        <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:C.surfaceAlt}}>
+                          <Icon n="right" s={13} c={C.textMuted}/>
+                        </div>
                       </div>
                     </div>
                   )
@@ -304,53 +191,55 @@ function Reader({ modul, dok, onWeiter, onBack }) {
     const load = async () => {
       setLoading(true)
       const url = await loadDokumentUrl(dok.nr)
-      setPdfUrl(url)
-      setLoading(false)
+      setPdfUrl(url); setLoading(false)
     }
     load()
   }, [dok.nr])
 
   return (
-    <div className="fade-up" style={{maxWidth:900,margin:'0 auto',padding:'28px 24px'}}>
-      <button className="btn btn-ghost" style={{marginBottom:18,fontSize:13}} onClick={onBack}>
-        <Icon n="back" s={14}/>Zurück zur Übersicht
+    <div className="fade-up" style={{maxWidth:960,margin:'0 auto',padding:'28px 24px'}}>
+      <button className="btn btn-ghost" style={{marginBottom:20,fontSize:13}} onClick={onBack}>
+        <Icon n="back" s={14}/>Zurueck zur Uebersicht
       </button>
-      <div className="card" style={{overflow:'hidden'}}>
-        <div style={{padding:'20px 24px',background:`linear-gradient(to right,${C.accentBg},${C.surface})`,borderBottom:`1px solid ${C.border}`}}>
-          <div style={{display:'flex',gap:8,marginBottom:10,flexWrap:'wrap'}}>
-            <Badge color={C.accent} bg={C.accentBg}>MODUL {modul.nr}</Badge>
-            <Badge color={C.textMuted} bg={C.surfaceAlt}>DOK {dok.nr}</Badge>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:C.shadowLg}}>
+        <div style={{padding:'24px 28px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16}}>
+          <div style={{width:48,height:48,borderRadius:12,background:`linear-gradient(135deg,${C.accentBg},#fff)`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <Icon n="docs" s={22} c={C.accent}/>
           </div>
-          <h1 style={{fontSize:20,fontWeight:700,marginBottom:3}}>{dok.titel}</h1>
-          <p style={{fontSize:12,color:C.textMuted}}>Version {dok.version} · Stand {dok.stand}</p>
-        </div>
-        <div>
-          {loading ? (
-            <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'48px',gap:12,color:C.textMuted}}>
-              <Spinner size={24} color={C.accent}/><span>Dokument wird geladen…</span>
+          <div style={{flex:1}}>
+            <div style={{display:'flex',gap:8,marginBottom:6,flexWrap:'wrap'}}>
+              <Badge color={C.accent} bg={C.accentBg}>MODUL {modul.nr}</Badge>
+              <Badge color={C.textMuted} bg={C.surfaceAlt}>DOK {dok.nr}</Badge>
             </div>
-          ) : !pdfUrl ? (
-            <div style={{padding:'32px',textAlign:'center',color:C.textMuted}}>
-              <Icon n="docs" s={40} c={C.textDim}/>
-              <p style={{marginTop:12,fontSize:14,fontWeight:600}}>Dokument nicht verfügbar</p>
-              <p style={{marginTop:6,fontSize:13,color:C.textDim}}>Die Datei d{dok.nr}.pdf wurde noch nicht hochgeladen.</p>
-              <button className="btn btn-ghost" style={{marginTop:16}} onClick={()=>setGelesen(true)}>Trotzdem fortfahren</button>
-            </div>
-          ) : (
-            <iframe src={pdfUrl} style={{width:'100%',height:'65vh',border:'none',display:'block'}} title={dok.titel}/>
-          )}
+            <h1 style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:2}}>{dok.titel}</h1>
+            <p style={{fontSize:12,color:C.textMuted}}>Version {dok.version} &middot; Stand {dok.stand}</p>
+          </div>
+          {gelesen && <Badge color={C.success} bg={C.successBg} bdr={C.successBdr}><Icon n="check" s={11} c={C.success}/>Gelesen</Badge>}
         </div>
-        <div style={{padding:'14px 24px',borderTop:`1px solid ${C.border}`,background:C.bg,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        {loading ? (
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'56px',gap:12,color:C.textMuted}}>
+            <Spinner size={24} color={C.accent}/><span>Dokument wird geladen...</span>
+          </div>
+        ) : !pdfUrl ? (
+          <div style={{padding:'40px',textAlign:'center',color:C.textMuted}}>
+            <Icon n="docs" s={44} c={C.textDim}/>
+            <p style={{marginTop:12,fontSize:15,fontWeight:600}}>Dokument nicht verfuegbar</p>
+            <button className="btn btn-ghost" style={{marginTop:16}} onClick={()=>setGelesen(true)}>Trotzdem fortfahren</button>
+          </div>
+        ) : (
+          <iframe src={pdfUrl} style={{width:'100%',height:'66vh',border:'none',display:'block'}} title={dok.titel}/>
+        )}
+        <div style={{padding:'16px 28px',borderTop:`1px solid ${C.border}`,background:C.bg,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           {!gelesen ? (
             <div style={{display:'flex',alignItems:'center',gap:12}}>
-              <p style={{fontSize:13,color:C.textMuted}}>Dokument vollständig gelesen?</p>
-              <button style={{display:'inline-flex',alignItems:'center',gap:6,padding:'7px 16px',fontSize:13,fontWeight:600,background:C.successBg,color:C.success,border:`1px solid ${C.successBdr}`,borderRadius:6,cursor:'pointer'}} onClick={()=>setGelesen(true)}>
+              <p style={{fontSize:13,color:C.textMuted}}>Dokument vollstaendig gelesen?</p>
+              <button style={{display:'inline-flex',alignItems:'center',gap:6,padding:'8px 18px',fontSize:13,fontWeight:600,background:C.successBg,color:C.success,border:`1px solid ${C.successBdr}`,borderRadius:8,cursor:'pointer'}} onClick={()=>setGelesen(true)}>
                 <Icon n="check" s={14} c={C.success}/>Ja, gelesen
               </button>
             </div>
           ) : (
-            <p style={{fontSize:13,color:C.success,display:'flex',alignItems:'center',gap:6}}>
-              <Icon n="check" s={14} c={C.success}/>Dokument vollständig gelesen
+            <p style={{fontSize:13,color:C.success,display:'flex',alignItems:'center',gap:6,fontWeight:600}}>
+              <Icon n="check" s={14} c={C.success}/>Dokument vollstaendig gelesen
             </p>
           )}
           <button className="btn btn-primary" disabled={!gelesen} onClick={onWeiter}>
@@ -377,11 +266,11 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
       setLoadingFragen(true)
       const gespeichert = await loadFragen(dok.id)
       if (gespeichert && gespeichert.length > 0) { setFragen(gespeichert); setLoadingFragen(false); return }
-      setGeneratingMsg('KI generiert Prüfungsfragen…')
+      setGeneratingMsg('KI generiert Pruefungsfragen...')
       const fallback = [
-        {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollständig gelesen.`,optionen:['Ja, vollständig gelesen','Nein, nicht gelesen'],richtig:0,erklaerung:'Danke für die Bestätigung.'},
-        {id:2,frage:'Ich werde die beschriebenen Sicherheitsregeln bei meiner Arbeit einhalten.',optionen:['Ja, werde ich einhalten','Nein'],richtig:0,erklaerung:'Arbeitssicherheit hat oberste Priorität.'},
-        {id:3,frage:'Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.',optionen:['Ja, korrekt','Nein, ich handle eigenständig'],richtig:0,erklaerung:'Rückfragen sind immer erwünscht.'},
+        {id:1,frage:`Ich habe das Dokument "${dok.titel}" vollstaendig gelesen.`,optionen:['Ja, vollstaendig gelesen','Nein, nicht gelesen'],richtig:0,erklaerung:'Danke fuer die Bestaetigung.'},
+        {id:2,frage:'Ich werde die beschriebenen Sicherheitsregeln einhalten.',optionen:['Ja, werde ich einhalten','Nein'],richtig:0,erklaerung:'Arbeitssicherheit hat oberste Prioritaet.'},
+        {id:3,frage:'Bei Unklarheiten wende ich mich an meinen Vorgesetzten oder die FASI.',optionen:['Ja, korrekt','Nein'],richtig:0,erklaerung:'Rueckfragen sind immer erwuenscht.'},
       ]
       const generiert = await generateFragen(dok.id, dok.titel)
       if (generiert && generiert.length > 0) { await saveFragen(dok.id, generiert); setFragen(generiert) }
@@ -395,7 +284,7 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'60vh',gap:16,color:C.textMuted}}>
       <Spinner size={32} color={C.accent}/>
       <div style={{textAlign:'center'}}>
-        <p style={{fontWeight:600,color:C.text}}>{generatingMsg || 'Fragen werden geladen…'}</p>
+        <p style={{fontWeight:600,color:C.text,fontSize:15}}>{generatingMsg || 'Fragen werden geladen...'}</p>
         <p style={{fontSize:13,marginTop:4}}>Einen Moment bitte.</p>
       </div>
     </div>
@@ -411,24 +300,24 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
     setSaving(true)
     const datum = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
     const nachweisId = `PSA-${Date.now().toString(36).toUpperCase()}`
-    await supabase.from('nachweise').insert({ ma_id: user.id, dok_id: dok.id, score, total: fragen.length, nachweis_id: nachweisId, datum })
+    await supabase.from('nachweise').insert({ ma_id:user.id, dok_id:dok.id, score, total:fragen.length, nachweis_id:nachweisId, datum })
     generateCert(user, modul, dok, score, fragen.length, datum, nachweisId)
     setSaving(false); onDone()
   }
 
   if (finished) return (
-    <div className="fade-up" style={{maxWidth:600,margin:'0 auto',padding:'40px 24px',textAlign:'center'}}>
-      <div className="card" style={{padding:'40px 32px',borderColor:passed?C.successBdr:C.dangerBdr,borderWidth:2}}>
-        <div style={{fontSize:48,marginBottom:14}}>{passed?'🏆':'📖'}</div>
-        <h2 style={{fontSize:22,fontWeight:700,marginBottom:8}}>{passed?'Bestanden!':'Nicht bestanden'}</h2>
-        <div style={{fontSize:40,fontWeight:700,color:passed?C.success:C.danger,margin:'14px 0'}}>{score}/{fragen.length}</div>
-        <p style={{color:C.textMuted,fontSize:14,marginBottom:28,lineHeight:1.7}}>
-          {passed ? `Du hast ${score} von ${fragen.length} Fragen korrekt beantwortet. Dein Schulungsnachweis wird gespeichert und heruntergeladen.` : `Mindestens ${Math.ceil(fragen.length*0.8)} Richtige erforderlich. Bitte das Dokument erneut lesen.`}
+    <div className="fade-up" style={{maxWidth:560,margin:'0 auto',padding:'40px 24px',textAlign:'center'}}>
+      <div style={{background:C.surface,border:`2px solid ${passed?C.successBdr:C.dangerBdr}`,borderRadius:20,padding:'48px 36px',boxShadow:C.shadowLg}}>
+        <div style={{width:80,height:80,borderRadius:'50%',background:passed?C.successBg:C.dangerBg,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',fontSize:36}}>{passed?'🏆':'📖'}</div>
+        <h2 style={{fontSize:24,fontWeight:700,marginBottom:8,color:C.text}}>{passed?'Bestanden!':'Nicht bestanden'}</h2>
+        <div style={{fontSize:48,fontWeight:700,color:passed?C.success:C.danger,margin:'16px 0'}}>{score}<span style={{fontSize:24,color:C.textDim}}>/{fragen.length}</span></div>
+        <p style={{color:C.textMuted,fontSize:14,marginBottom:32,lineHeight:1.7}}>
+          {passed ? `Du hast ${score} von ${fragen.length} Fragen korrekt beantwortet.` : `Mindestens ${Math.ceil(fragen.length*0.8)} Richtige erforderlich.`}
         </p>
         <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
           {!passed && <button className="btn btn-ghost" onClick={onBack}><Icon n="back" s={14}/>Nochmals lesen</button>}
-          {passed && <button className="btn btn-primary" disabled={saving} onClick={saveNachweis}>
-            {saving ? <Spinner/> : <><Icon n="dl" s={14} c="#fff"/>Nachweis speichern & herunterladen</>}
+          {passed && <button className="btn btn-primary" disabled={saving} onClick={saveNachweis} style={{padding:'12px 24px'}}>
+            {saving ? <Spinner/> : <><Icon n="dl" s={14} c="#fff"/>Nachweis speichern &amp; herunterladen</>}
           </button>}
         </div>
       </div>
@@ -437,27 +326,28 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
 
   return (
     <div className="fade-up" style={{maxWidth:700,margin:'0 auto',padding:'28px 24px'}}>
-      <button className="btn btn-ghost" style={{marginBottom:18,fontSize:13}} onClick={onBack}><Icon n="back" s={14}/>Zurück zum Dokument</button>
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-        <span style={{fontSize:12,color:C.textMuted,fontWeight:600,whiteSpace:'nowrap'}}>Frage {idx+1} von {fragen.length}</span>
-        <div style={{background:C.borderLight,borderRadius:4,height:5,overflow:'hidden',flex:1}}>
+      <button className="btn btn-ghost" style={{marginBottom:20,fontSize:13}} onClick={onBack}><Icon n="back" s={14}/>Zurueck zum Dokument</button>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:20}}>
+        <span style={{fontSize:13,color:C.textMuted,fontWeight:600,whiteSpace:'nowrap'}}>Frage {idx+1} / {fragen.length}</span>
+        <div style={{flex:1,height:6,background:C.borderLight,borderRadius:4,overflow:'hidden'}}>
           <div style={{width:`${((idx+(conf?1:0))/fragen.length)*100}%`,height:'100%',background:C.accent,borderRadius:4,transition:'width .4s'}}/>
         </div>
+        <span style={{fontSize:12,color:C.textDim}}>{Math.round((idx+(conf?1:0))/fragen.length*100)}%</span>
       </div>
-      <div className="card">
-        <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${C.borderLight}`}}>
-          <p style={{fontWeight:600,fontSize:16,lineHeight:1.5}}>{q.frage}</p>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',boxShadow:C.shadowMd}}>
+        <div style={{padding:'24px 28px 20px',borderBottom:`1px solid ${C.borderLight}`}}>
+          <p style={{fontWeight:600,fontSize:16,lineHeight:1.6,color:C.text}}>{q.frage}</p>
         </div>
-        <div style={{padding:'14px 24px',display:'flex',flexDirection:'column',gap:8}}>
+        <div style={{padding:'16px 28px',display:'flex',flexDirection:'column',gap:10}}>
           {q.optionen.map((opt,i) => {
-            let bg=C.surface,bc=C.border,tc=C.text
-            if(chosen===i&&!conf){bg=C.accentBg;bc=C.accent}
-            if(conf&&i===q.richtig){bg=C.successBg;bc=C.successBdr;tc=C.success}
-            if(conf&&chosen===i&&i!==q.richtig){bg=C.dangerBg;bc=C.dangerBdr;tc=C.danger}
+            let bg=C.surface,bc=C.border,tc=C.text,fw=400
+            if(chosen===i&&!conf){bg=C.accentBg;bc=C.accent;fw=600}
+            if(conf&&i===q.richtig){bg=C.successBg;bc=C.successBdr;tc=C.success;fw=600}
+            if(conf&&chosen===i&&i!==q.richtig){bg=C.dangerBg;bc=C.dangerBdr;tc=C.danger;fw=600}
             return (
               <div key={i} onClick={()=>!conf&&setAns(a=>({...a,[idx]:i}))}
-                style={{border:`1px solid ${bc}`,borderRadius:8,padding:'11px 15px',cursor:conf?'default':'pointer',background:bg,color:tc,display:'flex',alignItems:'center',gap:12,transition:'all .15s',fontSize:14}}>
-                <div style={{width:24,height:24,borderRadius:'50%',border:`1.5px solid ${bc}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,fontWeight:700,background:chosen===i&&!conf?C.accent:'transparent',color:chosen===i&&!conf?'#fff':tc}}>
+                style={{border:`1.5px solid ${bc}`,borderRadius:10,padding:'12px 16px',cursor:conf?'default':'pointer',background:bg,color:tc,display:'flex',alignItems:'center',gap:14,transition:'all .15s',fontSize:14,fontWeight:fw}}>
+                <div style={{width:28,height:28,borderRadius:'50%',border:`1.5px solid ${bc}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,fontWeight:700,background:chosen===i&&!conf?C.accent:'transparent',color:chosen===i&&!conf?'#fff':tc}}>
                   {conf&&i===q.richtig?<Icon n="check" s={13} c={C.success}/>:conf&&chosen===i&&i!==q.richtig?<Icon n="close" s={13} c={C.danger}/>:String.fromCharCode(65+i)}
                 </div>
                 {opt}
@@ -466,16 +356,16 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
           })}
         </div>
         {conf && (
-          <div style={{margin:'0 24px 14px',padding:'11px 15px',background:correct?C.successBg:C.dangerBg,border:`1px solid ${correct?C.successBdr:C.dangerBdr}`,borderRadius:8}}>
-            <p style={{fontWeight:600,fontSize:13,color:correct?C.success:C.danger,marginBottom:3}}>{correct?'✓ Richtig!':'✗ Leider falsch'}</p>
+          <div style={{margin:'0 28px 16px',padding:'14px 18px',background:correct?C.successBg:C.dangerBg,border:`1px solid ${correct?C.successBdr:C.dangerBdr}`,borderRadius:10}}>
+            <p style={{fontWeight:600,fontSize:13,color:correct?C.success:C.danger,marginBottom:4}}>{correct?'Richtig!':'Leider falsch'}</p>
             <p style={{fontSize:13,color:C.textMuted,lineHeight:1.6}}>{q.erklaerung}</p>
           </div>
         )}
-        <div style={{padding:'12px 24px',borderTop:`1px solid ${C.borderLight}`,display:'flex',justifyContent:'flex-end',gap:10}}>
+        <div style={{padding:'14px 28px',borderTop:`1px solid ${C.borderLight}`,display:'flex',justifyContent:'flex-end',gap:10}}>
           {!conf
-            ? <button className="btn btn-primary" disabled={chosen===undefined} onClick={()=>chosen!==undefined&&setConf(true)}>Bestätigen</button>
+            ? <button className="btn btn-primary" disabled={chosen===undefined} onClick={()=>chosen!==undefined&&setConf(true)}>Antwort bestaetigen</button>
             : <button className="btn btn-primary" onClick={()=>{if(idx<fragen.length-1){setIdx(i=>i+1);setConf(false)}else setFinished(true)}}>
-                {idx<fragen.length-1?'Nächste Frage':'Auswertung'}<Icon n="right" s={14} c="#fff"/>
+                {idx<fragen.length-1?'Naechste Frage':'Auswertung anzeigen'}<Icon n="right" s={14} c="#fff"/>
               </button>}
         </div>
       </div>
@@ -487,40 +377,35 @@ function generateCert(user, modul, dok, score, total, datum, nachweisId) {
   const w=794,h=561,cv=document.createElement('canvas')
   cv.width=w;cv.height=h;const ctx=cv.getContext('2d')
   ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w,h)
-  ctx.fillStyle='#fdf5f4';ctx.fillRect(0,0,w,72)
-  ctx.fillStyle='#fdf5f4';ctx.fillRect(0,h-55,w,55)
-  ctx.fillStyle='#c0392b';ctx.fillRect(0,0,w,5)
-  ctx.fillStyle='#c0392b';ctx.fillRect(0,h-5,w,5)
+  ctx.fillStyle='#fdf5f4';ctx.fillRect(0,0,w,72);ctx.fillRect(0,h-55,w,55)
+  ctx.fillStyle='#c0392b';ctx.fillRect(0,0,w,5);ctx.fillRect(0,h-5,w,5)
   ctx.fillStyle='#c0392b';ctx.font='bold 13px sans-serif';ctx.textAlign='left'
-  ctx.fillText('PSArbeitssicherheit GmbH  —  Schulungsnachweis',32,38)
+  ctx.fillText('PSArbeitssicherheit GmbH  -  Schulungsnachweis',32,38)
   ctx.fillStyle='#6c757d';ctx.font='11px sans-serif';ctx.textAlign='right'
-  ctx.fillText('Solingen · psarbeitssicherheit.de',w-32,38)
+  ctx.fillText('Solingen - psarbeitssicherheit.de',w-32,38)
   ctx.textAlign='center'
-  ctx.fillStyle='#1a1a2e';ctx.font='bold 30px sans-serif';ctx.fillText('Nachweis der Unterweisung',w/2,122)
+  ctx.fillStyle='#0f1e35';ctx.font='bold 30px sans-serif';ctx.fillText('Nachweis der Unterweisung',w/2,122)
   ctx.strokeStyle='#dee2e6';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,138);ctx.lineTo(w-60,138);ctx.stroke()
-  ctx.fillStyle='#6c757d';ctx.font='14px sans-serif';ctx.fillText('Hiermit wird bestätigt, dass',w/2,174)
+  ctx.fillStyle='#6c757d';ctx.font='14px sans-serif';ctx.fillText('Hiermit wird bestaetigt, dass',w/2,174)
   ctx.fillStyle='#c0392b';ctx.font='bold 26px sans-serif';ctx.fillText(user.name,w/2,212)
   ctx.fillStyle='#adb5bd';ctx.font='11px monospace';ctx.fillText('Personal-Nr.: '+user.personal,w/2,234)
   ctx.fillStyle='#6c757d';ctx.font='13px sans-serif'
-  ctx.fillText('das folgende Dokument gelesen und die Prüfungsfragen erfolgreich beantwortet hat:',w/2,268)
+  ctx.fillText('das folgende Dokument gelesen und die Pruefungsfragen erfolgreich beantwortet hat:',w/2,268)
   ctx.fillStyle='#fdf5f4';ctx.beginPath();ctx.roundRect(190,282,w-380,68,8);ctx.fill()
   ctx.strokeStyle='#f5b7b1';ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(190,282,w-380,68,8);ctx.stroke()
-  ctx.fillStyle='#1a1a2e';ctx.font='bold 15px sans-serif';ctx.fillText(`DOK ${dok.nr} – ${dok.titel}`,w/2,310)
-  ctx.fillStyle='#6c757d';ctx.font='12px sans-serif'
-  ctx.fillText(`Modul ${modul.nr}: ${modul.name}  ·  Version ${dok.version}`,w/2,334)
-  ctx.fillStyle='#2d6a4f';ctx.font='bold 13px sans-serif'
-  ctx.fillText(`Ergebnis: ${score} von ${total} Fragen richtig (${Math.round(score/total*100)}%)`,w/2,386)
-  ctx.fillStyle='#2d6a4f';ctx.fillRect(w/2-44,395,88,3)
+  ctx.fillStyle='#0f1e35';ctx.font='bold 15px sans-serif';ctx.fillText('DOK '+dok.nr+' - '+dok.titel,w/2,310)
+  ctx.fillStyle='#6c757d';ctx.font='12px sans-serif';ctx.fillText('Modul '+modul.nr+': '+modul.name+'  -  Version '+dok.version,w/2,334)
+  ctx.fillStyle='#16a34a';ctx.font='bold 13px sans-serif';ctx.fillText('Ergebnis: '+score+' von '+total+' Fragen richtig ('+Math.round(score/total*100)+'%)',w/2,386)
+  ctx.fillStyle='#16a34a';ctx.fillRect(w/2-44,395,88,3)
   ctx.strokeStyle='#dee2e6';ctx.lineWidth=1
   ctx.beginPath();ctx.moveTo(80,455);ctx.lineTo(280,455);ctx.stroke()
   ctx.beginPath();ctx.moveTo(w-280,455);ctx.lineTo(w-80,455);ctx.stroke()
   ctx.fillStyle='#6c757d';ctx.font='11px sans-serif'
-  ctx.fillText('Datum: '+datum,180,474)
-  ctx.fillText('Unterschrift Vorgesetzter / FASI',w-180,474)
+  ctx.fillText('Datum: '+datum,180,474);ctx.fillText('Unterschrift Vorgesetzter / FASI',w-180,474)
   ctx.fillStyle='#adb5bd';ctx.font='9px monospace'
-  ctx.fillText(`Nachweis-ID: ${nachweisId}  ·  PSArbeitssicherheit GmbH  ·  Solingen`,w/2,520)
+  ctx.fillText('Nachweis-ID: '+nachweisId+'  -  PSArbeitssicherheit GmbH  -  Solingen',w/2,520)
   const a=document.createElement('a')
-  a.download=`Schulungsnachweis_${user.name.replace(/ /g,'_')}_DOK${dok.nr}.png`
+  a.download='Schulungsnachweis_'+user.name.replace(/ /g,'_')+'_DOK'+dok.nr+'.png'
   a.href=cv.toDataURL('image/png');a.click()
 }
 
@@ -537,31 +422,38 @@ export default function EmployeeApp() {
 
   return (
     <>
-      <div style={{position:'sticky',top:0,zIndex:100,background:C.surface,borderBottom:`1px solid ${C.border}`,boxShadow:'0 1px 4px rgba(0,0,0,.07)'}}>
-        <div style={{maxWidth:900,margin:'0 auto',padding:'11px 24px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{background:C.accent,borderRadius:6,padding:'5px 7px',display:'flex'}}><Icon n="shield" s={15} c="#fff"/></div>
-            <span style={{fontWeight:700,fontSize:14}}>PSArbeitssicherheit</span>
-            <span style={{fontSize:11,color:C.textDim,letterSpacing:'.04em'}}>/ E-LEARNING</span>
-          </div>
+      <div style={{position:'sticky',top:0,zIndex:100,background:'#0f1e35',borderBottom:'1px solid rgba(255,255,255,0.08)',boxShadow:'0 2px 12px rgba(0,0,0,.2)'}}>
+        <div style={{maxWidth:960,margin:'0 auto',padding:'0 24px',display:'flex',alignItems:'center',justifyContent:'space-between',height:56}}>
           <div style={{display:'flex',alignItems:'center',gap:14}}>
-            <span style={{fontSize:13,color:C.textMuted,display:'flex',alignItems:'center',gap:6}}>
-              <Icon n="user" s={13} c={C.textMuted}/>{user.name}
-              <span style={{fontSize:11,color:C.textDim}}>({user.personal})</span>
-            </span>
-            <button className="btn btn-ghost" style={{padding:'6px 12px',fontSize:12}} onClick={logout}>
-              <Icon n="logout" s={13}/>Abmelden
+            <div style={{display:'flex',alignItems:'center',gap:2}}>
+              <span style={{fontSize:28,fontWeight:900,color:'#c0392b',letterSpacing:'-1px',lineHeight:1,fontFamily:"'Inter',sans-serif"}}>PSA</span>
+            </div>
+            <div style={{width:1,height:20,background:'rgba(255,255,255,0.2)'}}/>
+            <span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,0.45)',letterSpacing:'.08em'}}>E-LEARNING</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:16}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <div style={{width:30,height:30,borderRadius:'50%',background:'rgba(192,57,43,0.25)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,color:'#f1948a'}}>
+                {user.name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:'rgba(240,245,255,0.9)',lineHeight:1}}>{user.name}</div>
+                <div style={{fontSize:11,color:'rgba(180,200,230,0.5)',lineHeight:1,marginTop:2}}>{user.personal}</div>
+              </div>
+            </div>
+            <button onClick={logout} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',background:'rgba(255,255,255,0.08)',color:'rgba(200,215,235,0.8)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>
+              <Icon n="logout" s={12} c="rgba(200,215,235,0.7)"/>Abmelden
             </button>
           </div>
         </div>
       </div>
-      <div style={{minHeight:'calc(100vh - 53px)',background:C.bg}}>
+      <div style={{minHeight:'calc(100vh - 56px)',background:'#f4f6f9'}}>
         {screen==='overview' && <Overview user={user} onSelect={pick}/>}
         {screen==='read' && dok && <Reader modul={modul} dok={dok} onWeiter={()=>setScreen('quiz')} onBack={()=>setScreen('overview')}/>}
         {screen==='quiz' && dok && <Quiz user={user} modul={modul} dok={dok} onDone={()=>setScreen('overview')} onBack={()=>setScreen('read')}/>}
       </div>
-      <div style={{borderTop:`1px solid ${C.border}`,padding:'12px 24px',textAlign:'center',fontSize:11,color:C.textDim,background:C.surface}}>
-        © PSArbeitssicherheit GmbH · Solingen · E-Learning Portal
+      <div style={{borderTop:'1px solid #e2e6ea',padding:'12px 24px',textAlign:'center',fontSize:11,color:'#94a3b8',background:'#ffffff'}}>
+        PSArbeitssicherheit GmbH - Solingen - E-Learning Portal
       </div>
     </>
   )
