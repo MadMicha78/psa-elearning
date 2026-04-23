@@ -65,12 +65,12 @@ function Login({ onLogin }) {
           </div>
         </div>
       </section>
-      <style>{\`
+      <style dangerouslySetInnerHTML={{__html:`
         @keyframes windLoadImage{from{transform:scale(1.04);filter:saturate(0.7) contrast(0.9)}to{transform:scale(1);filter:saturate(1) contrast(1)}}
         @keyframes windEnter{from{opacity:0;transform:translate3d(0,18px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
         @keyframes windScan{from{transform:scaleX(0);opacity:0}35%{opacity:1}to{transform:scaleX(1);opacity:0.9}}
         input::placeholder{color:rgba(180,195,215,0.4)!important}
-      \`}</style>
+      `}}/>
     </div>
   )
 }
