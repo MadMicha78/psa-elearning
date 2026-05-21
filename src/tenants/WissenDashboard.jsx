@@ -13,7 +13,7 @@ const moduleIcons = {
   bell: '🔔',
 };
 
-export function WissenDashboard({ user, onLogout }) {
+export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   const tenant = useTenant();
   const t = tenant.theme;
   const b = tenant.branding;
@@ -173,7 +173,7 @@ export function WissenDashboard({ user, onLogout }) {
   );
 
   const handleCardClick = (doc) => {
-    alert(`📚 ${doc.titel}\n\n${doc.nr} · ${doc.version}\n\nDie Detail-Ansicht mit Inhalt + Quiz folgt in Stufe 2.`);
+    if (onOpenDoc) onOpenDoc(doc);
   };
 
   return (
