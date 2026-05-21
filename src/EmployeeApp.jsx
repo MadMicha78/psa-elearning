@@ -15,10 +15,10 @@ function Login({ onLogin }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  const go = async () => {
+const go = async () => {
     if (!name.trim() || !personal.trim()) { setErr('Bitte alle Felder ausfüllen.'); return }
     setLoading(true); setErr('')
-    const { data, error } = await supabase.from('mitarbeiter').select('*').eq('personal', personal.trim()).ilike('name', name.trim()).single()
+    const { data, error } = await supabase.from('mitarbeiter').select('*').eq('personal', personal.trim()).ilike('name', name.trim()).eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').single()
     setLoading(false)
     if (error || !data) { setErr('Mitarbeiter nicht gefunden. Bitte Name und Personalnummer prüfen.'); return }
     onLogin(data)
