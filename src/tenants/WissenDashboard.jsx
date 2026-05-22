@@ -4,16 +4,9 @@ import { useTenant } from './useTenant';
 import { supabase } from '../supabase';
 
 const gruppenIcons = {
-  'Alle Mitarbeiter': '👥',
-  'Buero': '🏢',
-  'Büro': '🏢',
-  'Produktion': '🏭',
-  'QM': '🛡️',
-  'Revision': '🔧',
-  'Montage': '🔩',
-  'Steigschutzeinrichtung': '🪜',
-  'Textile Verarbeitung': '🧵',
-  'Werkstatt': '🛠️',
+  'Alle Mitarbeiter': '👥', 'Buero': '🏢', 'Büro': '🏢', 'Produktion': '🏭',
+  'QM': '🛡️', 'Revision': '🔧', 'Montage': '🔩',
+  'Steigschutzeinrichtung': '🪜', 'Textile Verarbeitung': '🧵', 'Werkstatt': '🛠️',
 };
 
 export function WissenDashboard({ user, onLogout, onOpenDoc }) {
@@ -24,53 +17,75 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [gruppen, setGruppen] = useState([]);
+  const [statusMap, setStatusMap] = useState({});
 
   useEffect(() => {
     async function loadData() {
       try {
+        // 1. Rollen des Users (Admin = alle, sonst eigene)
         let rollenData = [];
-
         if (user.is_admin) {
           const { data, error: e1 } = await supabase
-            .from('rollen')
-            .select('id, name')
-            .eq('organization_id', tenant.organizationId)
-            .order('name');
+            .from('rollen').select('id, name')
+            .eq('organization_id', tenant.organizationId).order('name');
           if (e1) throw e1;
           rollenData = data || [];
         } else {
           const { data, error: e2 } = await supabase
-            .from('mitarbeiter_rollen')
-            .select('rolle_id, rollen(id, name)')
+            .from('mitarbeiter_rollen').select('rolle_id, rollen(id, name)')
             .eq('mitarbeiter_id', user.id);
           if (e2) throw e2;
           rollenData = (data || []).map((mr) => mr.rollen).filter(Boolean);
         }
 
-        if (rollenData.length === 0) {
-          setGruppen([]);
-          return;
-        }
+        if (rollenData.length === 0) { setGruppen([]); return; }
 
+        // 2. Pflicht-Dokumente pro Rolle
         const rolleIds = rollenData.map((r) => r.id);
         const { data: pflicht, error: e3 } = await supabase
-          .from('rolle_dokument_pflicht')
-          .select('rolle_id, dokumente(*)')
+          .from('rolle_dokument_pflicht').select('rolle_id, dokumente(*)')
           .in('rolle_id', rolleIds);
         if (e3) throw e3;
 
-        const grp = rollenData
-          .map((rolle) => {
-            const docs = (pflicht || [])
-              .filter((p) => p.rolle_id === rolle.id)
-              .map((p) => p.dokumente)
-              .filter(Boolean)
-              .sort((a, b) => (a.nr || '').localeCompare(b.nr || ''));
-            return { ...rolle, dokumente: docs };
-          })
-          .filter((g) => g.dokumente.length > 0);
-
+        const grp = rollenData.map((rolle) => {
+          const docs = (pflicht || [])
+            .filter((p) => p.rolle_id === rolle.id)
+            .map((p) => p.dokumente).filter(Boolean)
+            .sort((a, b) => (a.nr || '').localeCompare(b.nr || ''));
+          return { ...rolle, dokumente: docs };
+        }).filter((g) => g.dokumente.length > 0);
         setGruppen(grp);
+
+        // 3. Status laden + fehlende Zuweisungen anlegen (nur fuer echte MA, nicht Admin-Sammelansicht)
+        const alleDocIds = [...new Set(grp.flatMap((g) => g.dokumente.map((d) => d.id)))];
+        if (alleDocIds.length > 0) {
+          const { data: vorhandene, error: e4 } = await supabase
+            .from('lern_zuweisungen')
+            .select('dokument_id, status')
+            .eq('mitarbeiter_id', user.id)
+            .in('dokument_id', alleDocIds);
+          if (e4) throw e4;
+
+          const vorhandeneIds = new Set((vorhandene || []).map((z) => z.dokument_id));
+          const fehlende = alleDocIds.filter((id) => !vorhandeneIds.has(id));
+
+          if (fehlende.length > 0) {
+            const neueZuweisungen = fehlende.map((docId) => ({
+              organization_id: tenant.organizationId,
+              mitarbeiter_id: user.id,
+              dokument_id: docId,
+              status: 'offen',
+            }));
+            const { error: e5 } = await supabase
+              .from('lern_zuweisungen').insert(neueZuweisungen);
+            if (e5) console.error('Konnte Zuweisungen nicht anlegen:', e5);
+          }
+
+          const map = {};
+          (vorhandene || []).forEach((z) => { map[z.dokument_id] = z.status; });
+          fehlende.forEach((id) => { map[id] = 'offen'; });
+          setStatusMap(map);
+        }
       } catch (err) {
         console.error('Fehler beim Laden:', err);
         setError('Schulungen konnten nicht geladen werden.');
@@ -104,12 +119,15 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
     groupName: { fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: t.textMuted, margin: 0 },
     groupCount: { fontSize: 12, color: t.textMuted, fontWeight: 500, marginLeft: 4 },
     cardGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 },
-    card: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.15s', display: 'flex', flexDirection: 'column', minHeight: 140 },
+    card: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.15s', display: 'flex', flexDirection: 'column', minHeight: 150, position: 'relative' },
     cardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' },
     cardVaNr: { color: t.primaryColor, background: `${t.primaryColor}12`, padding: '4px 10px', borderRadius: 6 },
     cardRev: { color: t.textMuted },
     cardTitle: { fontSize: 18, fontWeight: 700, color: t.text, margin: 0, marginBottom: 8, letterSpacing: '-0.01em', lineHeight: 1.3 },
-    cardType: { fontSize: 12, color: t.textMuted, fontWeight: 500, marginTop: 'auto' },
+    cardFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' },
+    cardType: { fontSize: 12, color: t.textMuted, fontWeight: 500 },
+    statusErledigt: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#0F766E', background: '#0F766E15', padding: '4px 10px', borderRadius: 20 },
+    statusOffen: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#B45309', background: '#B4530915', padding: '4px 10px', borderRadius: 20 },
     loadingBox: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: '48px 32px', textAlign: 'center', color: t.textMuted, fontSize: 14 },
     errorBox: { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: 8, padding: 16, fontSize: 14 },
     emptyBox: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: '48px 32px', textAlign: 'center' },
@@ -119,7 +137,6 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   };
 
   const firstName = user.name.split(' ')[0];
-
   const typLabel = (typ) => {
     if (typ === 'verfahrensanweisung') return 'Verfahrensanweisung';
     if (typ === 'arbeitsanweisung') return 'Arbeitsanweisung';
@@ -127,6 +144,8 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
     if (typ === 'schulung') return 'Schulung';
     return 'Dokument';
   };
+
+  const offenCount = Object.values(statusMap).filter((s) => s !== 'abgeschlossen').length;
 
   return (
     <div style={styles.root}>
@@ -143,12 +162,9 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
             </div>
             <div style={styles.userMeta}>{user.personal} · {user.abt}</div>
           </div>
-          <button
-            onClick={onLogout}
-            style={styles.logoutBtn}
+          <button onClick={onLogout} style={styles.logoutBtn}
             onMouseEnter={(e) => { e.currentTarget.style.background = t.bgSubtle; e.currentTarget.style.borderColor = t.borderStrong; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = t.border; }}
-          >
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = t.border; }}>
             Abmelden
           </button>
         </div>
@@ -160,7 +176,9 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
           <p style={styles.heroSubtext}>
             {user.is_admin
               ? 'Hier siehst du alle Arbeitsgruppen und ihre zugewiesenen Schulungen.'
-              : 'Hier findest du die Schulungen deiner Arbeitsgruppe(n).'}
+              : offenCount > 0
+                ? `Du hast noch ${offenCount} ${offenCount === 1 ? 'offene Schulung' : 'offene Schulungen'} zu bearbeiten.`
+                : 'Alle deine Schulungen sind erledigt. Sehr gut! 🎉'}
           </p>
           {user.is_admin && <span style={styles.adminHint}>Admin-Ansicht · alle Arbeitsgruppen</span>}
         </section>
@@ -184,22 +202,29 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
               <span style={styles.groupCount}>{grp.dokumente.length} {grp.dokumente.length === 1 ? 'Schulung' : 'Schulungen'}</span>
             </div>
             <div style={styles.cardGrid}>
-              {grp.dokumente.map((doc) => (
-                <div
-                  key={doc.id}
-                  style={styles.card}
-                  onClick={() => onOpenDoc && onOpenDoc(doc)}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.primaryColor; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 27, 45, 0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
-                >
-                  <div style={styles.cardTop}>
-                    <span style={styles.cardVaNr}>{doc.nr}</span>
-                    <span style={styles.cardRev}>{doc.version}</span>
+              {grp.dokumente.map((doc) => {
+                const erledigt = statusMap[doc.id] === 'abgeschlossen';
+                return (
+                  <div key={doc.id} style={styles.card}
+                    onClick={() => onOpenDoc && onOpenDoc(doc)}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.primaryColor; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 27, 45, 0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                    <div style={styles.cardTop}>
+                      <span style={styles.cardVaNr}>{doc.nr}</span>
+                      <span style={styles.cardRev}>{doc.version}</span>
+                    </div>
+                    <h3 style={styles.cardTitle}>{doc.titel}</h3>
+                    <div style={styles.cardFooter}>
+                      <span style={styles.cardType}>{typLabel(doc.typ)}</span>
+                      {!user.is_admin && (
+                        erledigt
+                          ? <span style={styles.statusErledigt}>✓ Erledigt</span>
+                          : <span style={styles.statusOffen}>● Offen</span>
+                      )}
+                    </div>
                   </div>
-                  <h3 style={styles.cardTitle}>{doc.titel}</h3>
-                  <div style={styles.cardType}>{typLabel(doc.typ)}</div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         ))}
