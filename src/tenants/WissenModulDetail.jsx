@@ -251,10 +251,20 @@ export function WissenModulDetail({ doc, user, onBack, onLogout }) {
           <div style={styles.docMeta}>
             <span style={styles.docNr}>{doc.nr}</span>
             <span style={styles.docRev}>{doc.version}</span>
-            <span style={styles.docType}>· Verfahrensanweisung</span>
+            <span style={styles.docType}>· {doc.typ === 'arbeitsanweisung' ? 'Arbeitsanweisung' : 'Verfahrensanweisung'}</span>
             {erledigt && <span style={styles.statusErledigt}>✓ Erledigt</span>}
           </div>
           <h1 style={styles.docTitle}>{doc.titel}</h1>
+          {revision?.pdf_url && (
+            
+            <a href={revision.pdf_url}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 16, padding: '10px 18px', fontSize: 14, fontWeight: 600, color: t.primaryColor, background: `${t.primaryColor}0F`, border: `1px solid ${t.primaryColor}40`, borderRadius: 10, textDecoration: 'none' }}
+            >
+              📄 Original mit Bildern öffnen (PDF)
+            </a>
+          )}
         </section>
 
         {loading && <div style={styles.loadingBox}>Lade Inhalt…</div>}
