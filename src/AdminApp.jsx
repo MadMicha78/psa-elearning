@@ -403,8 +403,8 @@ export default function AdminApp() {
       const [{ data: mods },{ data: doks },{ data: ma },{ data: nw }] = await Promise.all([
         supabase.from('module').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
         supabase.from('dokumente').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
-        supabase.from('mitarbeiter').select('*').order('name'),
-        supabase.from('nachweise').select('*').order('created_at',{ascending:false}),
+        supabase.from('mitarbeiter').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('name'),
+        supabase.from('nachweise').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('created_at',{ascending:false}),
       ])
       setModules(mods||[])
       setDocs(doks||[])
