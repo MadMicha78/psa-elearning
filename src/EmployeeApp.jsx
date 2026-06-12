@@ -300,7 +300,8 @@ function Quiz({ user, modul, dok, onDone, onBack }) {
     setSaving(true)
     const datum = new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})
     const nachweisId = `PSA-${Date.now().toString(36).toUpperCase()}`
-    await supabase.from('nachweise').insert({ ma_id:user.id, dok_id:dok.id, score, total:fragen.length, nachweis_id:nachweisId, datum })
+    const { error: nwError } = await supabase.from('nachweise').insert({ ma_id:user.id, dok_id:dok.id, score, total:fragen.length, nachweis_id:nachweisId, datum, organization_id:'8410c976-9a2e-48cb-a33d-439f5771d64c' })
+    if (nwError) { console.error('Nachweis-Speicherfehler:', nwError); alert('Achtung: Dein Nachweis konnte NICHT gespeichert werden. Bitte melde dich beim Administrator.'); setSaving(false); return }
     generateCert(user, modul, dok, score, fragen.length, datum, nachweisId)
     setSaving(false); onDone()
   }
