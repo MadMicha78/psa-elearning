@@ -88,7 +88,7 @@ function Dokumente({ docs, setDocs, modules }) {
   const handleUpload=async()=>{
     if(!newDoc.nr||!newDoc.titel) return
     setUploading(true)
-    const { data, error } = await supabase.from('dokumente').insert({...newDoc,id:`d${newDoc.nr}`,aktiv:true}).select().single()
+    const { data, error } = await supabase.from('dokumente').insert({...newDoc,id:`d${newDoc.nr}`,aktiv:true,organization_id:'8410c976-9a2e-48cb-a33d-439f5771d64c'}).select().single()
     if (!error && data) setDocs(p=>[...p,data])
     setNewDoc({nr:'',titel:'',modul_id:'m1',typ:'A',version:'',stand:'',minuten:10})
     setShowUpload(false); setUploading(false)
@@ -401,8 +401,8 @@ export default function AdminApp() {
   useEffect(()=>{
     const load=async()=>{
       const [{ data: mods },{ data: doks },{ data: ma },{ data: nw }] = await Promise.all([
-        supabase.from('module').select('*').order('nr'),
-        supabase.from('dokumente').select('*').order('nr'),
+        supabase.from('module').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
+        supabase.from('dokumente').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
         supabase.from('mitarbeiter').select('*').order('name'),
         supabase.from('nachweise').select('*').order('created_at',{ascending:false}),
       ])

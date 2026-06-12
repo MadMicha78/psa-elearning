@@ -84,8 +84,8 @@ function Overview({ user, onSelect }) {
   useEffect(() => {
     const load = async () => {
       const [{ data: mods }, { data: doks }, { data: nw }] = await Promise.all([
-        supabase.from('module').select('*').order('nr'),
-        supabase.from('dokumente').select('*').eq('aktiv', true).order('nr'),
+        supabase.from('module').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
+        supabase.from('dokumente').select('*').eq('aktiv', true).eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
         supabase.from('nachweise').select('*').eq('ma_id', user.id),
       ])
       setModules(mods||[]); setDocs(doks||[]); setNachweise(nw||[])
