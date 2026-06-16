@@ -9,6 +9,34 @@ const gruppenIcons = {
   'Steigschutzeinrichtung': '🪜', 'Textile Verarbeitung': '🧵', 'Werkstatt': '🛠️',
 };
 
+// Schöne Titel für die DOC-Untergruppen (nach Hauptnummer)
+const docGruppenTitel = {
+  '001': 'Seile nähen',
+  '002': 'Bänder nähen',
+  '003': 'Geräte pulvern',
+  '004': 'Geräte montieren',
+  '005': 'Steigschutzeinrichtung',
+  '007': 'Bandfalldämpfer',
+  '008': 'Auffanggurte',
+  '009': 'Ausrüstung einschweißen',
+  '180': 'Sets verpacken',
+  '250': 'Montage',
+  '0010': 'Alukisten auskleiden / verplomben',
+  '0012': 'Zubehör',
+  '0015': 'Montagearbeiten (intern)',
+  '0017': 'Interne Konfektionierung',
+};
+
+// Aus "DOC 001 (10)" oder "DOC 0017a" die Hauptnummer "001" / "0017" ableiten
+function docHauptnummer(nr) {
+  if (!nr) return null;
+  const m = nr.match(/DOC\s*0*(\d+)/i);
+  if (!m) return null;
+  // Führende Nullen für Sortierung normalisieren, aber Originalschlüssel behalten
+  const raw = nr.match(/DOC\s*(\d+)/i);
+  return raw ? raw[1] : m[1];
+}
+
 export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   const tenant = useTenant();
   const t = tenant.theme;
@@ -18,11 +46,11 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   const [error, setError] = useState('');
   const [gruppen, setGruppen] = useState([]);
   const [statusMap, setStatusMap] = useState({});
+  const [openDocs, setOpenDocs] = useState({}); // Welche DOC-Untergruppen sind aufgeklappt
 
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. Rollen des Users (Admin = alle, sonst eigene)
         let rollenData = [];
         if (user.is_admin) {
           const { data, error: e1 } = await supabase
@@ -40,7 +68,6 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
 
         if (rollenData.length === 0) { setGruppen([]); return; }
 
-        // 2. Pflicht-Dokumente pro Rolle
         const rolleIds = rollenData.map((r) => r.id);
         const { data: pflicht, error: e3 } = await supabase
           .from('rolle_dokument_pflicht').select('rolle_id, dokumente(*)')
@@ -51,12 +78,11 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
           const docs = (pflicht || [])
             .filter((p) => p.rolle_id === rolle.id)
             .map((p) => p.dokumente).filter(Boolean)
-            .sort((a, b) => (a.nr || '').localeCompare(b.nr || ''));
+            .sort((a, b) => (a.nr || '').localeCompare(b.nr || '', 'de', { numeric: true }));
           return { ...rolle, dokumente: docs };
         }).filter((g) => g.dokumente.length > 0);
         setGruppen(grp);
 
-        // 3. Status laden + fehlende Zuweisungen anlegen (nur fuer echte MA, nicht Admin-Sammelansicht)
         const alleDocIds = [...new Set(grp.flatMap((g) => g.dokumente.map((d) => d.id)))];
         if (alleDocIds.length > 0) {
           const { data: vorhandene, error: e4 } = await supabase
@@ -96,6 +122,8 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
     loadData();
   }, [user.id, user.is_admin, tenant.organizationId]);
 
+  const toggleDoc = (key) => setOpenDocs((prev) => ({ ...prev, [key]: !prev[key] }));
+
   const styles = {
     root: { minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif", background: t.bgSubtle, color: t.text },
     header: { background: t.surface, borderBottom: `1px solid ${t.border}`, padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
@@ -128,6 +156,15 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
     cardType: { fontSize: 12, color: t.textMuted, fontWeight: 500 },
     statusErledigt: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700, color: '#0F766E', background: '#0F766E15', padding: '4px 10px', borderRadius: 20 },
     statusOffen: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: '#B45309', background: '#B4530915', padding: '4px 10px', borderRadius: 20 },
+    // DOC-Untergruppe (Accordion)
+    docHeader: { display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '16px 20px', marginBottom: 12, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 0.15s, background 0.15s' },
+    docChevron: { fontSize: 14, color: t.textMuted, transition: 'transform 0.2s', width: 16, textAlign: 'center' },
+    docHeaderNr: { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: t.primaryColor, background: `${t.primaryColor}12`, padding: '4px 10px', borderRadius: 6 },
+    docHeaderTitle: { fontSize: 16, fontWeight: 700, color: t.text, flex: 1 },
+    docHeaderMeta: { display: 'flex', alignItems: 'center', gap: 12 },
+    docHeaderCount: { fontSize: 13, color: t.textMuted, fontWeight: 500 },
+    docMiniProgress: { fontSize: 12, fontWeight: 700, color: '#0F766E', background: '#0F766E12', padding: '3px 10px', borderRadius: 20 },
+    docBody: { marginBottom: 24, paddingLeft: 4 },
     loadingBox: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: '48px 32px', textAlign: 'center', color: t.textMuted, fontSize: 14 },
     errorBox: { background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: 8, padding: 16, fontSize: 14 },
     emptyBox: { background: t.surface, border: `1px solid ${t.border}`, borderRadius: 12, padding: '48px 32px', textAlign: 'center' },
@@ -146,6 +183,81 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
   };
 
   const offenCount = Object.values(statusMap).filter((s) => s !== 'abgeschlossen').length;
+
+  // Eine einzelne Kachel rendern
+  const renderCard = (doc) => {
+    const erledigt = statusMap[doc.id] === 'abgeschlossen';
+    return (
+      <div key={doc.id} style={styles.card}
+        onClick={() => onOpenDoc && onOpenDoc(doc)}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.primaryColor; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 27, 45, 0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+        <div style={styles.cardTop}>
+          <span style={styles.cardVaNr}>{doc.nr}</span>
+          <span style={styles.cardRev}>{doc.version}</span>
+        </div>
+        <h3 style={styles.cardTitle}>{doc.titel}</h3>
+        <div style={styles.cardFooter}>
+          <span style={styles.cardType}>{typLabel(doc.typ)}</span>
+          {!user.is_admin && (
+            erledigt
+              ? <span style={styles.statusErledigt}>✓ Erledigt</span>
+              : <span style={styles.statusOffen}>● Offen</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Dokumente einer Arbeitsgruppe rendern: VAs als Kacheln, AAs gruppiert nach DOC-Nummer
+  const renderGruppenInhalt = (grp) => {
+    const vas = grp.dokumente.filter((d) => d.typ !== 'arbeitsanweisung');
+    const aas = grp.dokumente.filter((d) => d.typ === 'arbeitsanweisung');
+
+    // AAs nach DOC-Hauptnummer bündeln
+    const docMap = {};
+    aas.forEach((d) => {
+      const key = docHauptnummer(d.nr) || 'sonstige';
+      if (!docMap[key]) docMap[key] = [];
+      docMap[key].push(d);
+    });
+    const docKeys = Object.keys(docMap).sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
+
+    return (
+      <>
+        {/* VAs als normale Kacheln */}
+        {vas.length > 0 && <div style={styles.cardGrid}>{vas.map(renderCard)}</div>}
+
+        {/* AAs als aufklappbare DOC-Untergruppen */}
+        {docKeys.map((key) => {
+          const docs = docMap[key];
+          const accKey = `${grp.id}-${key}`;
+          const isOpen = !!openDocs[accKey];
+          const erledigtCount = docs.filter((d) => statusMap[d.id] === 'abgeschlossen').length;
+          const titel = docGruppenTitel[key] || 'Arbeitsanweisungen';
+          return (
+            <div key={accKey}>
+              <button style={styles.docHeader}
+                onClick={() => toggleDoc(accKey)}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.primaryColor; e.currentTarget.style.background = t.bgSubtle; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.background = t.surface; }}>
+                <span style={{ ...styles.docChevron, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+                <span style={styles.docHeaderNr}>DOC {key}</span>
+                <span style={styles.docHeaderTitle}>{titel}</span>
+                <span style={styles.docHeaderMeta}>
+                  {!user.is_admin && erledigtCount > 0 && (
+                    <span style={styles.docMiniProgress}>{erledigtCount}/{docs.length} ✓</span>
+                  )}
+                  <span style={styles.docHeaderCount}>{docs.length} {docs.length === 1 ? 'Schulung' : 'Schulungen'}</span>
+                </span>
+              </button>
+              {isOpen && <div style={styles.docBody}><div style={styles.cardGrid}>{docs.map(renderCard)}</div></div>}
+            </div>
+          );
+        })}
+      </>
+    );
+  };
 
   return (
     <div style={styles.root}>
@@ -201,31 +313,7 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
               <h2 style={styles.groupName}>{grp.name}</h2>
               <span style={styles.groupCount}>{grp.dokumente.length} {grp.dokumente.length === 1 ? 'Schulung' : 'Schulungen'}</span>
             </div>
-            <div style={styles.cardGrid}>
-              {grp.dokumente.map((doc) => {
-                const erledigt = statusMap[doc.id] === 'abgeschlossen';
-                return (
-                  <div key={doc.id} style={styles.card}
-                    onClick={() => onOpenDoc && onOpenDoc(doc)}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.primaryColor; e.currentTarget.style.boxShadow = '0 4px 12px rgba(15, 27, 45, 0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}>
-                    <div style={styles.cardTop}>
-                      <span style={styles.cardVaNr}>{doc.nr}</span>
-                      <span style={styles.cardRev}>{doc.version}</span>
-                    </div>
-                    <h3 style={styles.cardTitle}>{doc.titel}</h3>
-                    <div style={styles.cardFooter}>
-                      <span style={styles.cardType}>{typLabel(doc.typ)}</span>
-                      {!user.is_admin && (
-                        erledigt
-                          ? <span style={styles.statusErledigt}>✓ Erledigt</span>
-                          : <span style={styles.statusOffen}>● Offen</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {renderGruppenInhalt(grp)}
           </section>
         ))}
       </main>
