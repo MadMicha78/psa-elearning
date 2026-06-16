@@ -207,8 +207,9 @@ function Mitarbeiter({ mitarbeiter, setMitarbeiter, docs, nachweise }) {
   const addMa=async()=>{
     if(!newMa.name||!newMa.personal) return
     setSaving(true)
-    const {data,error}=await supabase.from('mitarbeiter').insert(newMa).select().single()
-    if(!error&&data) setMitarbeiter(p=>[...p,data])
+  const {data,error}=await supabase.from('mitarbeiter').insert({...newMa,organization_id:'8410c976-9a2e-48cb-a33d-439f5771d64c'}).select().single()
+    if(error){console.error('MA-Speicherfehler:',error);alert('Mitarbeiter konnte nicht gespeichert werden: '+error.message);setSaving(false);return}
+    if(data) setMitarbeiter(p=>[...p,data])
     setNewMa({name:'',personal:'',email:'',abt:''}); setShowAdd(false); setSaving(false)
   }
 
