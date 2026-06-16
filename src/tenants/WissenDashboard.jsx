@@ -37,7 +37,7 @@ function docHauptnummer(nr) {
   return raw ? raw[1] : m[1];
 }
 
-export function WissenDashboard({ user, onLogout, onOpenDoc }) {
+export function WissenDashboard({ user, onLogout, onOpenDoc, onOpenStatus }) {
   const tenant = useTenant();
   const t = tenant.theme;
   const b = tenant.branding;
@@ -274,6 +274,16 @@ export function WissenDashboard({ user, onLogout, onOpenDoc }) {
             </div>
             <div style={styles.userMeta}>{user.personal} · {user.abt}</div>
           </div>
+          {user.is_admin && (
+            <button onClick={onOpenStatus} style={{ padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#FFF', background: t.primaryColor, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
+              📊 Schulungsstand
+            </button>
+          )}
+          {user.is_admin && (
+            <button onClick={onOpenStatus} style={{ padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#FFF', background: t.primaryColor, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
+              📊 Schulungsstand
+            </button>
+          )}
           <button onClick={onLogout} style={styles.logoutBtn}
             onMouseEnter={(e) => { e.currentTarget.style.background = t.bgSubtle; e.currentTarget.style.borderColor = t.borderStrong; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = t.border; }}>

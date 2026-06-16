@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { WissenLogin } from './WissenLogin';
 import { WissenDashboard } from './WissenDashboard';
 import { WissenModulDetail } from './WissenModulDetail';
+import { WissenStatus } from './WissenStatus';
 
 const STORAGE_KEY = 'wissen_user';
 
@@ -10,6 +11,7 @@ export function WissenApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeDoc, setActiveDoc] = useState(null);
+  const [view, setView] = useState('dashboard'); // 'dashboard' | 'status'
 
   useEffect(() => {
     try {
@@ -30,12 +32,14 @@ export function WissenApp() {
   const handleLogout = () => {
     setUser(null);
     setActiveDoc(null);
+    setView('dashboard');
     localStorage.removeItem(STORAGE_KEY);
   };
 
   if (loading) return null;
   if (!user) return <WissenLogin onLogin={handleLogin} />;
 
+  // Detail-Ansicht einer Schulung
   if (activeDoc) {
     return (
       <WissenModulDetail
@@ -47,11 +51,23 @@ export function WissenApp() {
     );
   }
 
+  // Status-Dashboard (nur Admin)
+  if (view === 'status' && user.is_admin) {
+    return (
+      <WissenStatus
+        user={user}
+        onBack={() => setView('dashboard')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <WissenDashboard
       user={user}
       onLogout={handleLogout}
       onOpenDoc={(doc) => setActiveDoc(doc)}
+      onOpenStatus={() => setView('status')}
     />
   );
 }
