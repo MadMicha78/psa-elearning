@@ -227,7 +227,7 @@ function Reader({ modul, dok, onWeiter, onBack }) {
             <button className="btn btn-ghost" style={{marginTop:16}} onClick={()=>setGelesen(true)}>Trotzdem fortfahren</button>
           </div>
         ) : (
-          <iframe src={pdfUrl} style={{width:'100%',height:'66vh',border:'none',display:'block'}} title={dok.titel}/>
+          <iframe src={dok.format==='landscape' ? pdfUrl+'#view=FitH' : pdfUrl} style={{width:'100%',height:dok.format==='landscape'?'82vh':'66vh',border:'none',display:'block'}} title={dok.titel}/>
         )}
         <div style={{padding:'16px 28px',borderTop:`1px solid ${C.border}`,background:C.bg,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           {!gelesen ? (
