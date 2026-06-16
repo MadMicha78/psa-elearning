@@ -279,12 +279,7 @@ export function WissenDashboard({ user, onLogout, onOpenDoc, onOpenStatus }) {
               📊 Schulungsstand
             </button>
           )}
-          {user.is_admin && (
-            <button onClick={onOpenStatus} style={{ padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#FFF', background: t.primaryColor, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit' }}>
-              📊 Schulungsstand
-            </button>
-          )}
-          <button onClick={onLogout} style={styles.logoutBtn}
+            <button onClick={onLogout} style={styles.logoutBtn}
             onMouseEnter={(e) => { e.currentTarget.style.background = t.bgSubtle; e.currentTarget.style.borderColor = t.borderStrong; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = t.border; }}>
             Abmelden
