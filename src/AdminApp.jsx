@@ -489,7 +489,10 @@ function StatusDashboard({ docs, mitarbeiter, nachweise }) {
 }
 
 export default function AdminApp() {
-  const [page,setPage]=useState('dashboard')
+  const [page,setPage]=useState(()=>{
+    const v=new URLSearchParams(window.location.search).get('view')
+    return v==='status'?'status':'dashboard'
+  })
   const [docs,setDocs]=useState([])
   const [modules,setModules]=useState([])
   const [mitarbeiter,setMitarbeiter]=useState([])

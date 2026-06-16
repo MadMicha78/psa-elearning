@@ -442,6 +442,16 @@ export default function EmployeeApp() {
                 <div style={{fontSize:11,color:'rgba(180,200,230,0.5)',lineHeight:1,marginTop:2}}>{user.personal}</div>
               </div>
             </div>
+            {user.is_admin && (
+              <>
+                <a href="?admin=1&view=status" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',background:'#c0392b',color:'#fff',border:'1px solid #c0392b',borderRadius:7,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textDecoration:'none'}}>
+                  📊 Schulungsstand
+                </a>
+                <a href="?admin=1" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',background:'rgba(192,57,43,0.25)',color:'#f1948a',border:'1px solid rgba(192,57,43,0.4)',borderRadius:7,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textDecoration:'none'}}>
+                  🔧 Admin-Panel
+                </a>
+              </>
+            )}
             <button onClick={logout} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',background:'rgba(255,255,255,0.08)',color:'rgba(200,215,235,0.8)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:7,fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:'inherit'}}>
               <Icon n="logout" s={12} c="rgba(200,215,235,0.7)"/>Abmelden
             </button>
