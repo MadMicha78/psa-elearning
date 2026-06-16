@@ -389,7 +389,105 @@ function Nachweise({ nachweise, mitarbeiter, docs }) {
   )
 }
 
-// ── MAIN ADMIN APP ────────────────────────────────────────────────────────────
+// ── STATUS DASHBOARD (Schulungsstand) ─────────────────────────────────────────
+function StatusDashboard({ docs, mitarbeiter, nachweise }) {
+  const [openMa, setOpenMa] = useState({})
+  const aktiveDocs = docs.filter(d => d.aktiv)
+
+  // bestes Ergebnis pro MA+Dok (>=80% = bestanden)
+  const nwMap = {}
+  nachweise.forEach(n => {
+    const key = `${n.ma_id}|${n.dok_id}`
+    const quote = n.total ? n.score / n.total : 0
+    const best = nwMap[key]
+    if (!best || quote >= (best.score / (best.total || 1))) nwMap[key] = n
+  })
+
+  const rows = mitarbeiter.map(ma => {
+    const docRows = aktiveDocs.map(d => {
+      const nw = nwMap[`${ma.id}|${d.id}`]
+      const bestanden = nw && nw.total ? (nw.score / nw.total) >= 0.8 : false
+      return { doc: d, erledigt: bestanden, datum: nw ? nw.datum : null, score: nw ? nw.score : null, total: nw ? nw.total : null }
+    })
+    const erledigtCount = docRows.filter(r => r.erledigt).length
+    return { ma, docs: docRows, erledigtCount, total: docRows.length }
+  })
+
+  const ampel = (count, total) => {
+    if (total === 0) return C.textDim
+    if (count === 0) return "#DC2626"
+    if (count < total) return "#B45309"
+    return "#0F766E"
+  }
+
+  const maGesamt = rows.length
+  const pflichtGesamt = rows.reduce((s, r) => s + r.total, 0)
+  const erledigtGesamt = rows.reduce((s, r) => s + r.erledigtCount, 0)
+  const gesamtQuote = pflichtGesamt ? Math.round((erledigtGesamt / pflichtGesamt) * 100) : 0
+
+  const toggle = id => setOpenMa(p => ({ ...p, [id]: !p[id] }))
+
+  return (
+    <div>
+      <div style={{ marginBottom: 22 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Schulungsstand</h1>
+        <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>Übersicht des Lernfortschritts aller Mitarbeiter</div>
+      </div>
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14, marginBottom: 26 }}>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, letterSpacing: ".06em" }}>MITARBEITER</div>
+          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{maGesamt}</div>
+        </div>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, letterSpacing: ".06em" }}>SCHULUNGEN</div>
+          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{pflichtGesamt}</div>
+          <div style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>{erledigtGesamt} erledigt</div>
+        </div>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, letterSpacing: ".06em" }}>GESAMT-QUOTE</div>
+          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{gesamtQuote}%</div>
+        </div>
+      </div>
+
+      {/* MA-Liste */}
+      {rows.map(({ ma, docs: docRows, erledigtCount, total }) => {
+        const farbe = ampel(erledigtCount, total)
+        const isOpen = !!openMa[ma.id]
+        return (
+          <div key={ma.id} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
+            <button onClick={() => toggle(ma.id)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", width: "100%", textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={{ fontSize: 11, color: C.textMuted, width: 12, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .2s" }}>▶</span>
+              <span style={{ width: 11, height: 11, borderRadius: "50%", background: farbe, flexShrink: 0 }} />
+              <span style={{ fontWeight: 700, fontSize: 15, flex: 1 }}>{ma.name}</span>
+              <span style={{ fontSize: 12, color: C.textMuted }}>{ma.personal}{ma.abt ? ` · ${ma.abt}` : ""}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: farbe, background: `${farbe}15`, padding: "4px 12px", borderRadius: 20, minWidth: 92, textAlign: "center" }}>
+                {erledigtCount}/{total}{total > 0 ? ` · ${Math.round((erledigtCount / total) * 100)}%` : ""}
+              </span>
+            </button>
+            {isOpen && (
+              <div style={{ borderTop: `1px solid ${C.border}`, padding: "6px 16px 14px" }}>
+                {docRows.length === 0 && <div style={{ padding: "10px 0", fontSize: 13, color: C.textMuted }}>Keine aktiven Schulungen vorhanden.</div>}
+                {docRows.map(r => (
+                  <div key={r.doc.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${C.borderLight}`, fontSize: 14 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.accent, background: C.accentBg, padding: "3px 8px", borderRadius: 5, minWidth: 70 }}>{r.doc.nr}</span>
+                    <span style={{ flex: 1 }}>{r.doc.titel}</span>
+                    {r.erledigt
+                      ? <span style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", background: "#0F766E12", padding: "3px 10px", borderRadius: 20 }}>✓ {r.total ? `${r.score}/${r.total}` : "erledigt"}</span>
+                      : <span style={{ fontSize: 12, fontWeight: 600, color: "#B45309", background: "#B4530912", padding: "3px 10px", borderRadius: 20 }}>● offen</span>}
+                    <span style={{ fontSize: 12, color: C.textMuted, minWidth: 90, textAlign: "right" }}>{r.datum || "—"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function AdminApp() {
   const [page,setPage]=useState('dashboard')
   const [docs,setDocs]=useState([])
@@ -417,6 +515,7 @@ export default function AdminApp() {
 
   const nav=[
     {id:"dashboard",label:"Dashboard",icon:"dashboard"},
+    {id:"status",label:"Schulungsstand",icon:"check"},
     {id:"dokumente",label:"Dokumente",icon:"docs"},
     {id:"mitarbeiter",label:"Mitarbeiter",icon:"users"},
     {id:"nachweise",label:"Nachweise",icon:"check"},
@@ -462,6 +561,7 @@ export default function AdminApp() {
       </div>
       <div style={{flex:1,padding:"28px 26px",overflowY:"auto",minWidth:0}}>
         {page==="dashboard"  &&<Dashboard docs={docs} modules={modules} mitarbeiter={mitarbeiter} nachweise={nachweise}/>}
+        {page==="status"     &&<StatusDashboard docs={docs} mitarbeiter={mitarbeiter} nachweise={nachweise}/>}
         {page==="dokumente"  &&<Dokumente docs={docs} setDocs={setDocs} modules={modules}/>}
         {page==="mitarbeiter"&&<Mitarbeiter mitarbeiter={mitarbeiter} setMitarbeiter={setMitarbeiter} docs={docs} nachweise={nachweise}/>}
         {page==="nachweise"  &&<Nachweise nachweise={nachweise} mitarbeiter={mitarbeiter} docs={docs}/>}
