@@ -1,0 +1,74 @@
+diff --git a/src/AdminApp.jsx b/src/AdminApp.jsx
+index c858fea..3b6c06f 100644
+--- a/src/AdminApp.jsx
++++ b/src/AdminApp.jsx
+@@ -4,2 +4,3 @@ import { C, inputStyle, labelStyle, getInitials, getAvatarColor } from './theme.
+ import { Icon, Badge, Modal, StatCard, Spinner } from './components.jsx'
++import { istModulGesperrt } from './zugriff.js'
+ 
+@@ -407,3 +408,4 @@ function StatusDashboard({ docs, mitarbeiter, nachweise }) {
+   const rows = mitarbeiter.map(ma => {
+-    const docRows = aktiveDocs.map(d => {
++    // Gesperrte Module (z.B. m1 für Praktikanten) zählen nicht als Pflichtschulung
++    const docRows = aktiveDocs.filter(d => !istModulGesperrt(ma, d.modul_id)).map(d => {
+       const nw = nwMap[`${ma.id}|${d.id}`]
+diff --git a/src/EmployeeApp.jsx b/src/EmployeeApp.jsx
+index 8749d65..b75c949 100644
+--- a/src/EmployeeApp.jsx
++++ b/src/EmployeeApp.jsx
+@@ -5,2 +5,3 @@ import { Icon, Badge, ProgressBar, Spinner } from './components.jsx'
+ import { loadDokumentUrl, generateFragen, saveFragen, loadFragen } from './docProcessor.js'
++import { istModulGesperrt, gesperrteModulIds } from './zugriff.js'
+ 
+@@ -85,8 +86,13 @@ function Overview({ user, onSelect }) {
+     const load = async () => {
++      // Gesperrte Module (z.B. m1 für Praktikanten) gar nicht erst laden
++      const gesperrt = gesperrteModulIds(user)
++      let dokQuery = supabase.from('dokumente').select('*').eq('aktiv', true).eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr')
++      if (gesperrt.length > 0) dokQuery = dokQuery.not('modul_id', 'in', `(${gesperrt.join(',')})`)
+       const [{ data: mods }, { data: doks }, { data: nw }] = await Promise.all([
+         supabase.from('module').select('*').eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
+-        supabase.from('dokumente').select('*').eq('aktiv', true).eq('organization_id', '8410c976-9a2e-48cb-a33d-439f5771d64c').order('nr'),
++        dokQuery,
+         supabase.from('nachweise').select('*').eq('ma_id', user.id),
+       ])
+-      setModules(mods||[]); setDocs(doks||[]); setNachweise(nw||[])
++      // Sicherheitsnetz: gesperrte Dokumente auch clientseitig nie in den State lassen
++      setModules(mods||[]); setDocs((doks||[]).filter(d => !istModulGesperrt(user, d.modul_id))); setNachweise(nw||[])
+       setLoading(false)
+@@ -131,2 +137,19 @@ function Overview({ user, onSelect }) {
+         const mDocs = docs.filter(d => d.modul_id === m.id)
++        if (istModulGesperrt(user, m.id)) return (
++          <div key={m.id} style={{marginBottom:28}}>
++            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,opacity:0.55}}>
++              <div style={{width:4,height:20,background:C.textDim,borderRadius:2}}/>
++              <Badge color={C.textMuted} bg={C.surfaceAlt}>MODUL {m.nr}</Badge>
++              <span style={{fontWeight:700,fontSize:16,color:C.textMuted}}>{m.name}</span>
++              <span style={{fontSize:12,color:C.textDim,marginLeft:'auto'}}>🔒 Gesperrt</span>
++            </div>
++            <div style={{background:C.surfaceAlt,border:`1px solid ${C.border}`,borderRadius:12,padding:'20px',display:'flex',alignItems:'center',gap:14,opacity:0.65,cursor:'not-allowed',userSelect:'none'}}>
++              <span style={{fontSize:24,lineHeight:1}}>🔒</span>
++              <div>
++                <div style={{fontWeight:600,fontSize:14,color:C.textMuted}}>Kein Zugriff</div>
++                <div style={{fontSize:12,color:C.textDim,marginTop:2}}>Dieses Modul ist für dich nicht freigegeben.</div>
++              </div>
++            </div>
++          </div>
++        )
+         return (
+@@ -418,3 +441,7 @@ export default function EmployeeApp() {
+ 
+-  const pick = (m, d) => { setModul(m); setDok(d); setScreen('read') }
++  const pick = (m, d) => {
++    // Guard: gesperrte Module lassen sich nicht öffnen (auch nicht über Direktansicht)
++    if (istModulGesperrt(user, m?.id) || istModulGesperrt(user, d?.modul_id)) return
++    setModul(m); setDok(d); setScreen('read')
++  }
+   const logout = () => { setUser(null); setScreen('overview') }
+@@ -462,4 +489,4 @@ export default function EmployeeApp() {
+         {screen==='overview' && <Overview user={user} onSelect={pick}/>}
+-        {screen==='read' && dok && <Reader modul={modul} dok={dok} onWeiter={()=>setScreen('quiz')} onBack={()=>setScreen('overview')}/>}
+-        {screen==='quiz' && dok && <Quiz user={user} modul={modul} dok={dok} onDone={()=>setScreen('overview')} onBack={()=>setScreen('read')}/>}
++        {screen==='read' && dok && !istModulGesperrt(user, dok.modul_id) && <Reader modul={modul} dok={dok} onWeiter={()=>setScreen('quiz')} onBack={()=>setScreen('overview')}/>}
++        {screen==='quiz' && dok && !istModulGesperrt(user, dok.modul_id) && <Quiz user={user} modul={modul} dok={dok} onDone={()=>setScreen('overview')} onBack={()=>setScreen('read')}/>}
+       </div>
